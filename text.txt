@@ -4,4 +4,4 @@ gmKz1x5NAuYVEDhI
 
 git add .
 git commit -m "update project"
-git push
+git push --set-upstream origin main
