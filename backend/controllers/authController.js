@@ -7,64 +7,66 @@ import crypto from "crypto";
 
 // ================= REGISTER =================
 export const register = async (req, res) => {
-  try {
+ try {
 
-    const { name, email, password } = req.body;
+  const { name, email, password } = req.body;
 
-    const exists = await userModel.findOne({ email });
+  const exists = await userModel.findOne({ email });
 
-    if (exists) {
-      return res.json({
-        success: false,
-        message: "User already exists"
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const verifyToken = crypto.randomBytes(32).toString("hex");
-
-    const user = new userModel({
-      name,
-      email,
-      password: hashedPassword,
-      verifyOTP: verifyToken,
-      verifyOTPExpire: Date.now() + 3600000
-    });
-
-    await user.save();
-
-    const verifyUrl =
-      `http://localhost:5000/api/auth/verify-email?token=${verifyToken}`;
-
-    await sendEmail(user.email, verifyUrl);
-
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
-    res.json({
-      success: true,
-      message: "Register success. Check your email"
-    });
-
-  } catch (error) {
-
-    res.json({
-      success: false,
-      message: error.message
-    });
-
+  if (exists) {
+   return res.json({
+    success: false,
+    message: "User already exists"
+   });
   }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const verifyToken = crypto.randomBytes(32).toString("hex");
+
+  const user = await userModel.create({
+   name,
+   email,
+   password: hashedPassword,
+   verifyOTP: verifyToken,
+   verifyOTPExpire: Date.now() + 3600000
+  });
+
+  const verifyUrl =
+   `http://localhost:5000/api/auth/verify-email?token=${verifyToken}`;
+
+console.log("1");
+  await sendEmail(user.email, verifyUrl);
+console.log("2");
+  const token = jwt.sign(
+   { id: user._id },
+   process.env.JWT_SECRET,
+   { expiresIn: "7d" }
+  );
+console.log("3");
+  res.cookie("token", token, {
+   httpOnly: true,
+   secure: process.env.NODE_ENV === "production",
+   sameSite: "strict",
+   maxAge: 7 * 24 * 60 * 60 * 1000
+  });
+
+  res.json({
+   success: true,
+   message: "Register success. Check your email"
+  });
+
+ } catch (error) {
+
+ console.log("REGISTER ERROR:", error);
+
+ res.json({
+  success: false,
+  message: error.message
+ });
+
+
+ }
 };
 
 
@@ -120,36 +122,47 @@ export const login = async (req, res) => {
 
 
 // ================= SEND EMAIL =================
+
 export const sendEmail = async (to, url) => {
 
   const transporter = nodemailer.createTransport({
+
     host: "smtp-relay.brevo.com",
     port: 587,
+
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
     }
+
   });
 
- await transporter.sendMail({
-  from: '"Rmutt" <freshjk24@gmail.com>',   // ต้องเป็น email ที่ verify
-  to,
-  subject: "Verify your account",
-  html: `
-    <h2>Email Verification</h2>
-    <a href="${url}">Verify Account</a>
-  `
-});
+  const info = await transporter.sendMail({
 
-const info = await transporter.sendMail({
-  from: `"MERN App" <${process.env.SMTP_USER}>`,
-  to,
-  subject: "Verify your account",
-  html: `<a href="${url}">Verify</a>`
-});
+    from: `"Rmutt" <freshjk24@gmail.com>`,
+    to,
 
-console.log("Message ID:", info.messageId);
-  console.log("Email sent to:", to);
+    subject: "ยืนยันบัญชีของคุณ",
+
+    html: `
+      <h2>ยืนยันอีเมลของคุณ</h2>
+
+      <p>กรุณากดปุ่มด้านล่างเพื่อยืนยันบัญชี</p>
+
+      <a href="${url}"
+      style="
+        padding:12px 20px;
+        background:#4CAF50;
+        color:white;
+        text-decoration:none;
+        border-radius:5px;
+      ">
+        Verify Email
+      </a>
+    `
+
+  });
+
 };
 
 
@@ -164,7 +177,7 @@ export const verifyEmail = async (req, res) => {
   });
 
   if (!user) {
-    return res.send("Invalid or expired token");
+    return res.send("ลิ้งยืนยันไม่ถูกต้องหรือหมดอายุแล้ว ❌");
   }
 
   user.isVerified = true;
@@ -173,6 +186,6 @@ export const verifyEmail = async (req, res) => {
 
   await user.save();
 
-  res.send("Email verified successfully ✅");
+  res.send("ยืนยันอีเมลเรียบร้อย ✅");
 
 };

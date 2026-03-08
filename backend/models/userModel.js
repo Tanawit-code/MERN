@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
   verifyOTP: { type: String, default: "" },
   verifyOTPExpire: { type: Number, default: 0 },
 
-  isVerified: { type: Boolean, default: false },
+  isVerified: { type: Boolean, default: false }, 
+  verificationToken: String,
 
   resetOTP: { type: String, default: "" },
   resetOTPExpire: { type: Number, default: 0 },
