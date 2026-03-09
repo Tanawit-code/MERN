@@ -52,6 +52,18 @@ const Login = () => {
           คลิกเพื่อเพื่อเข้าสู่สมาชิก {state === 'Sign Up' ? 'Login' : 'Sign Up'}
         </button>
 
+          {state === "Sign Up" ?(
+            <p className='text-center text-sm text-gray-400'>
+
+              มีบัญชีอยู่แล้ว <span onClick={()=> setState('login')} className='text-indigo-500 cursor-pointer hover:text-indigo-300'></span>
+              
+            </p>
+           ) : (
+            <p className='text-center text-sm text-gray-400'>
+              ยังไม่มีบัญชี? <span onClick={()=> setState('Sign Up')} className='text-indigo-500 cursor-pointer hover:text-indigo-300'></span>
+            </p>
+
+          )}
       </div>
 
     </div>

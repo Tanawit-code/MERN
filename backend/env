@@ -1,8 +1,0 @@
-MONGO_URI=mongodb+srv://Tanawit_db:gmKz1x5NAuYVEDhI@cluster0.ea98n7i.mongodb.net/
-SMTP_USER=a454f1001@smtp-brevo.com
-SMTP_PASS=xsmtpsib-5e361bc3238af4693df3269f6f7e1094dbe21e4c7b6fd6a01b1e69c54dcc5e5f-sEGcsiqTMa7sJNkV
-# EMAIL_USER=freshjk24@gmail.com
-# EMAIL_PASS=ptke gvll sbje wdhr
-JWT_SECRET=secret#text
-NODE_ENV=development
-CLIENT_URL=http://localhost:5000
