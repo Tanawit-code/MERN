@@ -1,46 +1,57 @@
 import React, { useState } from 'react'
+import { useNavigate} from 'react-router-dom'
 
 const Login = () => {
 
   const [state, setState] = useState('Sign Up')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   return(
-    <div className='flex'>
+    <div className='flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400'>
 
-      <div>
+      <div className='bg-slate-900 p-10 rounded-lg shadow-lg w-full sm:w-96 text-indigo-300 text-sm'>
 
-        <h2>{state === 'Sign Up' ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}</h2>
+        <p onClick={() => Navigate('/')} className='cursor-pointer'> กลับหน้าแรก</p>
 
-        <p>
+        <h2 className='text-3xl font-semibold text-white text-center mb-3'>{state === 'Sign Up' ? 'สมัครสมาชิก' : 'เข้าสู่ระบบ'}</h2>
+
+        <p className='text-center text-sm'>
           {state === 'Sign Up'
             ? 'กรุณากรอกข้อมูลเพื่อเข้าสู่สมาชิก'
             : 'กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบ'}
         </p>
-
+          
         <form>
           {state ==='Sign Up' && (
 
-          <div className='mb-4 items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
+          <div className='mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
             <label className="text-gray-400">ชื่อ-นามสกุล</label>
             <input
-              className='bg-transparent outline-none'type='text'placeholder='' required/> 
+              onChange={e => setName(e.target.value)}
+              value={name}
+              className='bg-transparent outline-none'type='text'placeholder='ระบุชื่อ-นามสกุล' required/> 
           </div>
           )}
-          <div className='mb-4 items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
-            <label className="text-gray-400">รหัสผ่าน</label>
-            <input
-              className='bg-transparent outline-none'type='text'
-              placeholder='' required
-            />
-          </div>
 
-          <div className='mb-4 items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
+          <div className='mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
             <label className="text-gray-400">อีเมล</label>
             <input
-              className='bg-transparent outline-none'type='text'
-              placeholder='' required
-            />
+              onChange={e => setEmail(e.target.value)}
+              value={email}
+              className='bg-transparent outline-none'type='email'placeholder='ระบุอีเมล' required/> 
           </div>
+
+          <div className='mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
+            <label className="text-gray-400">รหัสผ่าน</label>
+            <input
+              onChange={e => setPassword(e.target.value)}
+              value={password}
+              className='bg-transparent outline-none'type='text'placeholder='ระบุรหัสผ่าน' required/> 
+          </div>
+
+          
 
         </form>
 
@@ -48,9 +59,7 @@ const Login = () => {
           คลิกเพื่อกรอกข้อมูลเพื่อเข้าสู่ระบบ {state === 'Sign Up' ? 'Login' : 'Sign Up'}
         </button>
 
-        <button onClick={() => setState(state === 'Sign Up' ? 'Login' : 'Sign Up')}>
-          คลิกเพื่อเพื่อเข้าสู่สมาชิก {state === 'Sign Up' ? 'Login' : 'Sign Up'}
-        </button>
+
 
           {state === "Sign Up" ?(
             <p className='text-center text-sm text-gray-400'>
