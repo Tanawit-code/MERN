@@ -18,16 +18,14 @@ const Login = () => {
         </p>
 
         <form>
-        
+          {state ==='Sign Up' && (
 
           <div className='mb-4 items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
-            <label className="text-gray-400">ชื่อผู้ใช้</label>
+            <label className="text-gray-400">ชื่อ-นามสกุล</label>
             <input
-              className='bg-transparent outline-none'type='text'
-              placeholder='' required
-            />
+              className='bg-transparent outline-none'type='text'placeholder='' required/> 
           </div>
-
+          )}
           <div className='mb-4 items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]'>
             <label className="text-gray-400">รหัสผ่าน</label>
             <input
