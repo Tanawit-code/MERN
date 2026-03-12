@@ -1,5 +1,6 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export const AppContext = createContext();
 
@@ -9,6 +10,7 @@ const AppContextProvider = ({ children }) => {
 
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     axios.defaults.withCredentials = true;
 
@@ -23,8 +25,34 @@ const AppContextProvider = ({ children }) => {
             }
 
         } catch (error) {
+
             setIsLoggedIn(false);
             setUserData(null);
+
+        } finally {
+
+            setIsLoading(false);
+
+        }
+    };
+
+    const logout = async () => {
+        try {
+
+            const { data } = await axios.get(`${BackendUrl}/api/auth/logout`);
+
+            if (data.success) {
+                setIsLoggedIn(false);
+                setUserData(null);
+                toast.success("ออกจากระบบสำเร็จ");
+            } else {
+                toast.error(data.message || "ผิดพลาดในการออกจากระบบ");
+            }
+
+        } catch (error) {
+
+            toast.error("Logout failed");
+
         }
     };
 
@@ -38,7 +66,9 @@ const AppContextProvider = ({ children }) => {
         setIsLoggedIn,
         userData,
         setUserData,
-        getUserData
+        getUserData,
+        logout,
+        isLoading
     };
 
     return (
@@ -46,6 +76,7 @@ const AppContextProvider = ({ children }) => {
             {children}
         </AppContext.Provider>
     );
+
 };
 
 export default AppContextProvider;
