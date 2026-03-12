@@ -7,7 +7,6 @@ import crypto from "crypto";
 
 // ================= REGISTER =================
 export const register = async (req, res) => {
-<<<<<<< HEAD
   try {
 
     const { name, email, password } = req.body;
@@ -67,67 +66,6 @@ export const register = async (req, res) => {
 
 
   }
-=======
- try {
-
-  const { name, email, password } = req.body;
-
-  const exists = await userModel.findOne({ email });
-
-  if (exists) {
-   return res.json({
-    success: false,
-    message: "User already exists"
-   });
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const verifyToken = crypto.randomBytes(32).toString("hex");
-
-  const user = await userModel.create({
-   name,
-   email,
-   password: hashedPassword,
-   verifyOTP: verifyToken,
-   verifyOTPExpire: Date.now() + 3600000
-  });
-
-  const verifyUrl =
-   `http://localhost:5000/api/auth/verify-email?token=${verifyToken}`;
-
-
-  await sendEmail(user.email, verifyUrl);
-
-  const token = jwt.sign(
-   { id: user._id },
-   process.env.JWT_SECRET,
-   { expiresIn: "7d" }
-  );
-  res.cookie("token", token, {
-   httpOnly: true,
-   secure: process.env.NODE_ENV === "production",
-   sameSite: "strict",
-   maxAge: 7 * 24 * 60 * 60 * 1000
-  });
-
-  res.json({
-   success: true,
-   message: "Register success. Check your email"
-  });
-
- } catch (error) {
-
- console.log("REGISTER ERROR:", error);
-
- res.json({
-  success: false,
-  message: error.message
- });
-
-
- }
->>>>>>> 8dcc28b3ab0fc7214123df53abac46840d33b729
 };
 
 
@@ -181,7 +119,6 @@ export const login = async (req, res) => {
 
 };
 
-<<<<<<< HEAD
 // ================= LOGOUT =================
 export const logout = async (req, res) => {
 
@@ -228,8 +165,6 @@ export const getMe = async (req, res) => {
   }
 }
 
-=======
->>>>>>> 8dcc28b3ab0fc7214123df53abac46840d33b729
 
 // ================= SEND EMAIL =================
 

@@ -2,11 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-<<<<<<< HEAD
 import 'dotenv/config'
-=======
-
->>>>>>> 8dcc28b3ab0fc7214123df53abac46840d33b729
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 

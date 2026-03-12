@@ -1,9 +1,6 @@
 import express from "express";
-import { register, sendEmail, verifyEmail } from "../controllers/authController.js";
-<<<<<<< HEAD
-import userAuth from '../middleware/authMiddleware.js'
-=======
->>>>>>> 8dcc28b3ab0fc7214123df53abac46840d33b729
+import { register, sendEmail, verifyEmail, login, logout, getMe } from "../controllers/authController.js";
+import userAuth from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -19,13 +16,8 @@ router.get("/test-email", async (req, res) => {
   res.send("Email sent");
 });
 
-<<<<<<< HEAD
-authRouter.post('/resiter', register)
-authRouter.post('/login', login)
-authRouter.post('/logout', logout)
-authRouter.post('/member', userAuth, getMe)
+router.post("/login", login);
+router.post("/logout", logout);
+router.get("/member", userAuth, getMe);
 
-export default authRouter;
-=======
 export default router;
->>>>>>> 8dcc28b3ab0fc7214123df53abac46840d33b729

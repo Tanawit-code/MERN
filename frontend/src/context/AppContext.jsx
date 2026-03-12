@@ -1,24 +1,51 @@
-import { useContext } from "react";
+import { createContext, useState, useEffect } from "react";
+import axios from "axios";
 
-export const AppContext = createContext()
+export const AppContext = createContext();
 
+const AppContextProvider = ({ children }) => {
 
-export const AppContextProvider = (props) => {
+    const BackendUrl = "http://localhost:5000";
 
-    const backendurl = import.meta.env.VITE_BACKEND_URL
-    const[isLoggenIn, setIsLoggenIn] = useState(false)
-    const[userData, setUserData] = useState(false)
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [userData, setUserData] = useState(null);
 
-    const valus = {
+    axios.defaults.withCredentials = true;
 
-    }
+    const getUserData = async () => {
+        try {
+
+            const { data } = await axios.get(`${BackendUrl}/api/auth/member`);
+
+            if (data.success) {
+                setIsLoggedIn(true);
+                setUserData(data.user);
+            }
+
+        } catch (error) {
+            setIsLoggedIn(false);
+            setUserData(null);
+        }
+    };
+
+    useEffect(() => {
+        getUserData();
+    }, []);
+
+    const value = {
+        BackendUrl,
+        isLoggedIn,
+        setIsLoggedIn,
+        userData,
+        setUserData,
+        getUserData
+    };
 
     return (
-        <AppContext.Provider valus={value}>
-            
-            {props.children}
-
+        <AppContext.Provider value={value}>
+            {children}
         </AppContext.Provider>
-    )
-    
-}
+    );
+};
+
+export default AppContextProvider;
