@@ -2,7 +2,10 @@ import { Routes, Route } from "react-router-dom"
 import Login from "./pages/Login"
 import Member from "./pages/Member"
 
-function App() {
+import { ToastContainer } from "react-toastify"
+import 'react-toastify/dist/ReactToastify.css'
+
+const App = () => {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
