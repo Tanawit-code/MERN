@@ -101,11 +101,21 @@ export const login = async (req, res) => {
     );
 
     res.cookie("token", token, {
-      httpOnly: true
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax"
     });
 
     res.json({
-      success: true
+      success: true,
+      user
+    });
+    res.json({
+      success: true,
+      user: {
+        name: user.name,
+        email: user.email
+      }
     });
 
   } catch (error) {

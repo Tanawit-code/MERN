@@ -12,13 +12,15 @@ connectDB();
 
 const app = express();
 
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:5000']
+
 app.use(express.json());
 app.use(cookieParser());
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: allowedOrigins,
   credentials: true
-}));
+}))
 
 app.use("/api/auth", authRoutes);
 

@@ -7,11 +7,15 @@ import 'react-toastify/dist/ReactToastify.css'
 
 const App = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Login />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/member" element={<Member />} />
-    </Routes>
+    <div>
+      <ToastContainer />
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/member" element={<Member />} />
+
+      </Routes>
+    </div>
   )
 }
 
