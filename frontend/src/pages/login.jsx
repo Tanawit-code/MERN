@@ -75,7 +75,7 @@ const Login = () => {
       <div className="bg-slate-900 p-10 rounded-lg shadow-lg w-full sm:w-96 text-indigo-300 text-sm">
 
         <p
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/Home")}
           className="cursor-pointer mb-4"
         >
           ← กลับหน้าแรก

@@ -6,22 +6,24 @@ import "dotenv/config";
 
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import postRoutes from "./routes/postRoutes.js";
 
 dotenv.config();
 connectDB();
 
 const app = express();
 
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5000']
-
-app.use(express.json());
-app.use(cookieParser());
+const allowedOrigins = ['http://localhost:5173'];
 
 app.use(cors({
   origin: allowedOrigins,
   credentials: true
-}))
+}));
 
+app.use(express.json());
+app.use(cookieParser());
+
+app.use("/api/posts", postRoutes);
 app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
