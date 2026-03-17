@@ -49,13 +49,15 @@ export const toggleLike = async (req, res) => {
             return res.json({ success: false, message: "ไม่เจอโพสต์" });
         }
 
-        const isLiked = post.likes.includes(userId);
+        const isLiked = post.likes.some(
+            (id) => id.toString() === userId
+        );
 
         if (isLiked) {
-            // unlike
-            post.likes = post.likes.filter(id => id !== userId);
+            post.likes = post.likes.filter(
+                (id) => id.toString() !== userId
+            );
         } else {
-            // like
             post.likes.push(userId);
         }
 

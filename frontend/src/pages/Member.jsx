@@ -266,12 +266,13 @@ const Member = () => {
                             </p>
 
                             <p className="mt-2 text-gray-600">{post.content}</p>
-
+                            {/* กด like */}
                             <button
                                 onClick={() => handleLike(post._id)}
-                                className={`mt-2 transition duration-200 cursor-pointer ${post.likes?.includes(userData._id) ? "text-red-500" : "text-gray-500"}`}
+                                className={`mt-2 transition duration-200 cursor-pointer ${post.likes?.includes(userData._id) ? "text-lg font-bold text-blue-500 text " : "text-gray-500"
+                                    }`}
                             >
-                                ❤️ {post.likes?.length || 0}
+                                👍 {post.likes?.length || 0}
                             </button>
 
                             {/* Comment Input */}
