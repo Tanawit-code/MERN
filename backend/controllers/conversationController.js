@@ -1,7 +1,7 @@
+import mongoose from "mongoose";
 import conversationModel from "../models/conversationModel.js";
 import friendshipModel from "../models/friendshipModel.js";
 
-// ประกาศ makePairKey เฉพาะไฟล์นี้
 const makePairKey = (userA, userB) => {
     return [String(userA), String(userB)].sort().join("_");
 };
@@ -12,31 +12,63 @@ export const createOrGetPrivateConversation = async (req, res) => {
         const userId = req.userId;
         const { friendId } = req.body;
 
-        const pairKey = makePairKey(userId, friendId); // ✅ ต้องเรียงเหมือน accept request
+        if (!friendId) {
+            return res.status(400).json({
+                success: false,
+                message: "กรุณาระบุ friendId",
+            });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(friendId)) {
+            return res.status(400).json({
+                success: false,
+                message: "friendId ไม่ถูกต้อง",
+            });
+        }
+
+        if (String(userId) === String(friendId)) {
+            return res.status(400).json({
+                success: false,
+                message: "ไม่สามารถสร้างห้องแชทกับตัวเองได้",
+            });
+        }
+
+        const pairKey = makePairKey(userId, friendId);
 
         const isFriend = await friendshipModel.findOne({ pairKey });
         if (!isFriend) {
-            return res.status(403).json({ success: false, message: "ต้องเป็นเพื่อนกันก่อนจึงจะเริ่มแชทได้" });
+            return res.status(403).json({
+                success: false,
+                message: "ต้องเป็นเพื่อนกันก่อนจึงจะเริ่มแชทได้",
+            });
         }
 
-        let conversation = await conversationModel.findOne({ type: "private", pairKey })
+        let conversation = await conversationModel
+            .findOne({ type: "private", pairKey })
             .populate("members", "_id name email profilePic");
 
         if (!conversation) {
             conversation = await conversationModel.create({
                 type: "private",
                 members: [userId, friendId],
-                pairKey, // ✅ ต้องใส่
+                pairKey,
             });
 
-            conversation = await conversationModel.findById(conversation._id)
+            conversation = await conversationModel
+                .findById(conversation._id)
                 .populate("members", "_id name email profilePic");
         }
 
-        res.status(200).json({ success: true, conversation });
-
+        return res.status(200).json({
+            success: true,
+            conversation,
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        console.log("createOrGetPrivateConversation error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
@@ -46,19 +78,17 @@ export const getMyConversations = async (req, res) => {
         const userId = req.userId;
 
         const conversations = await conversationModel
-            .find({
-                members: userId,
-            })
+            .find({ members: userId })
             .populate("members", "_id name email profilePic")
             .sort({ updatedAt: -1 });
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             conversations,
         });
     } catch (error) {
         console.log("getMyConversations error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
@@ -70,6 +100,13 @@ export const getConversationById = async (req, res) => {
     try {
         const userId = req.userId;
         const { conversationId } = req.params;
+
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            return res.status(400).json({
+                success: false,
+                message: "conversationId ไม่ถูกต้อง",
+            });
+        }
 
         const conversation = await conversationModel
             .findById(conversationId)
@@ -93,13 +130,13 @@ export const getConversationById = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             conversation,
         });
     } catch (error) {
         console.log("getConversationById error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });

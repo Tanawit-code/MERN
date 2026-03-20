@@ -1,38 +1,58 @@
 import React, { useContext } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import { Link } from "react-router-dom";
-
 
 const Navbar = () => {
-    const { userData } = useContext(AppContext);
+    const { userData, logout } = useContext(AppContext);
+    const location = useLocation();
+
+    const linkStyle = (path) => ({
+        color: "#fff",
+        textDecoration: "none",
+        padding: "8px 12px",
+        borderRadius: "8px",
+        background: location.pathname === path ? "#2563eb" : "transparent",
+    });
 
     return (
-        <div className="w-full h-16 bg-white shadow flex items-center justify-between px-6 fixed top-0 z-50">
-
-            <div className="flex items-center gap-6">
-                <Link to="/member" className="font-medium hover:text-blue-500">
-                    หน้าแรก
-                </Link>
-                <Link to="/search" className="font-medium hover:text-blue-500">
-                    ค้นหา
-                </Link>
-                <Link to="/requests" className="font-medium hover:text-blue-500">
-                    คำขอเพื่อน
-                </Link>
-                <Link to="/friends" className="font-medium hover:text-blue-500">
-                    เพื่อน
-                </Link>
+        <nav
+            style={{
+                background: "#111827",
+                color: "#fff",
+                padding: "16px 24px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "12px",
+            }}
+        >
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                <Link to="/" style={linkStyle("/")}>หน้าแรก</Link>
+                <Link to="/search" style={linkStyle("/search")}>ค้นหา</Link>
+                <Link to="/friend-requests" style={linkStyle("/friend-requests")}>คำขอเพื่อน</Link>
+                <Link to="/friends" style={linkStyle("/friends")}>เพื่อน</Link>
             </div>
 
-            <div className="flex items-center gap-4">
-                <p className="font-medium">{userData?.name || "User"}</p>
-
-                <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center">
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span>{userData?.name || "User"}</span>
+                <div
+                    style={{
+                        width: "34px",
+                        height: "34px",
+                        borderRadius: "50%",
+                        background: "#2563eb",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        fontWeight: "bold",
+                    }}
+                >
                     {userData?.name ? userData.name.charAt(0).toUpperCase() : "U"}
                 </div>
             </div>
-        </div>
+        </nav>
     );
 };
 
-export default Navbar;  
+export default Navbar;

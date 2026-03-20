@@ -5,9 +5,7 @@ import { toast } from "react-toastify";
 export const AppContext = createContext();
 
 const AppContextProvider = ({ children }) => {
-
     const BackendUrl = "http://localhost:5000";
-
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -16,30 +14,26 @@ const AppContextProvider = ({ children }) => {
 
     const getUserData = async () => {
         try {
-
             const { data } = await axios.get(`${BackendUrl}/api/auth/member`);
 
             if (data.success) {
                 setIsLoggedIn(true);
                 setUserData(data.user);
+            } else {
+                setIsLoggedIn(false);
+                setUserData(null);
             }
-
         } catch (error) {
-
             setIsLoggedIn(false);
             setUserData(null);
-
         } finally {
-
             setIsLoading(false);
-
         }
     };
 
     const logout = async () => {
         try {
-
-            const { data } = await axios.get(`${BackendUrl}/api/auth/logout`);
+            const { data } = await axios.post(`${BackendUrl}/api/auth/logout`);
 
             if (data.success) {
                 setIsLoggedIn(false);
@@ -48,11 +42,8 @@ const AppContextProvider = ({ children }) => {
             } else {
                 toast.error(data.message || "ผิดพลาดในการออกจากระบบ");
             }
-
         } catch (error) {
-
-            toast.error("Logout failed");
-
+            toast.error(error.response?.data?.message || "Logout failed");
         }
     };
 
@@ -68,7 +59,7 @@ const AppContextProvider = ({ children }) => {
         setUserData,
         getUserData,
         logout,
-        isLoading
+        isLoading,
     };
 
     return (
@@ -76,7 +67,6 @@ const AppContextProvider = ({ children }) => {
             {children}
         </AppContext.Provider>
     );
-
 };
 
 export default AppContextProvider;

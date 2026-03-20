@@ -7,7 +7,6 @@ import {
     getFriendsApi,
 } from "../services/chatApi";
 
-
 function SearchUsers() {
     const [keyword, setKeyword] = useState("");
     const [users, setUsers] = useState([]);
@@ -25,8 +24,8 @@ function SearchUsers() {
         try {
             const res = await getSentFriendRequestsApi();
             const requests = res.data.requests || [];
-
             const sentMap = {};
+
             requests.forEach((req) => {
                 if (req.receiver?._id) sentMap[req.receiver._id] = true;
                 else if (req.receiver) sentMap[req.receiver] = true;
@@ -42,8 +41,8 @@ function SearchUsers() {
         try {
             const res = await getFriendsApi();
             const friends = res.data.friends || [];
-
             const map = {};
+
             friends.forEach((friend) => {
                 if (friend?._id) map[friend._id] = true;
             });
@@ -82,7 +81,7 @@ function SearchUsers() {
                 [receiverId]: true,
             }));
 
-            alert(res.data.message);
+            alert(res.data.message || "ส่งคำขอสำเร็จ");
         } catch (error) {
             const message = error.response?.data?.message || "ส่งคำขอไม่สำเร็จ";
 
@@ -106,17 +105,19 @@ function SearchUsers() {
     };
 
     return (
-        <div className="bg-gray-100 min-h-screen">
+        <div style={{ minHeight: "100vh", background: "#f5f5f5" }}>
             <Navbar />
-            <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-                <h2 style={{ textAlign: "center", marginBottom: "20px", paddingTop: "80px" }}>ค้นหาผู้ใช้</h2>
 
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+            <div style={{ maxWidth: "900px", margin: "0 auto", padding: "24px" }}>
+                <h2 style={{ marginBottom: "20px" }}>ค้นหาผู้ใช้</h2>
+
+                <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
                     <input
                         type="text"
-                        placeholder="ค้นหาจาก username หรือ email"
+                        placeholder="พิมพ์ชื่อหรืออีเมล"
                         value={keyword}
                         onChange={(e) => setKeyword(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                         style={{
                             padding: "10px",
                             borderRadius: "8px",
@@ -126,81 +127,92 @@ function SearchUsers() {
                             outline: "none",
                         }}
                     />
+
                     <button
                         onClick={handleSearch}
                         style={{
-                            marginLeft: "10px",
                             padding: "10px 16px",
-                            borderRadius: "8px",
                             border: "none",
-                            backgroundColor: "#2e6df5",
+                            borderRadius: "8px",
+                            background: "#2563eb",
                             color: "#fff",
-                            fontWeight: "bold",
                             cursor: "pointer",
-                            fontSize: "14px",
                         }}
                     >
                         ค้นหา
                     </button>
                 </div>
 
-                {loading && <p style={{ textAlign: "center", color: "#555" }}>กำลังค้นหา...</p>}
+                {loading && <p>กำลังค้นหา...</p>}
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {users.map((user) => {
-                        const isSending = sendingId === user._id;
-                        const isFriend = friendMap[user._id];
-                        const isSent = !isFriend && sentRequests[user._id];
+                {!loading && users.length === 0 && (
+                    <p style={{ color: "#666" }}>ยังไม่มีผลลัพธ์</p>
+                )}
 
-                        return (
-                            <div
-                                key={user._id}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    border: "1px solid #ddd",
-                                    borderRadius: "12px",
-                                    padding: "12px 16px",
-                                    backgroundColor: "#fff",
-                                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                                }}
-                            >
-                                <div>
-                                    <p style={{ margin: 0, fontWeight: "bold" }}>{user.username}</p>
-                                    <p style={{ margin: 0, fontSize: "13px", color: "#666" }}>{user.email}</p>
-                                </div>
-                                <div>
-                                    <button
-                                        onClick={() => handleAddFriend(user._id)}
-                                        disabled={isSending || isSent || isFriend}
-                                        style={{
-                                            padding: "6px 12px",
-                                            borderRadius: "20px",
-                                            border: "none",
-                                            backgroundColor: isFriend
-                                                ? "#aaa"
-                                                : isSent
-                                                    ? "#f0ad4e"
-                                                    : "#2e6df5",
-                                            color: "#fff",
-                                            fontWeight: "bold",
-                                            cursor: isSending || isSent || isFriend ? "not-allowed" : "pointer",
-                                            fontSize: "13px",
-                                        }}
-                                    >
-                                        {isSending
-                                            ? "กำลังส่ง..."
-                                            : isFriend
-                                                ? "เป็นเพื่อนกันอยู่แล้ว"
-                                                : isSent
-                                                    ? "ส่งคำขอแล้ว"
-                                                    : "เพิ่มเพื่อน"}
-                                    </button>
-                                </div>
+                <div style={{ display: "grid", gap: "12px" }}>
+                    {users.map((user) => (
+                        <div
+                            key={user._id}
+                            style={{
+                                background: "#fff",
+                                padding: "16px",
+                                borderRadius: "12px",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: "12px",
+                            }}
+                        >
+                            <div>
+                                <h4 style={{ margin: 0 }}>{user.name || user.username || "-"}</h4>
+                                <p style={{ margin: "6px 0 0", color: "#666" }}>{user.email}</p>
                             </div>
-                        );
-                    })}
+
+                            {friendMap[user._id] ? (
+                                <button
+                                    disabled
+                                    style={{
+                                        padding: "8px 14px",
+                                        borderRadius: "8px",
+                                        border: "none",
+                                        background: "#16a34a",
+                                        color: "#fff",
+                                    }}
+                                >
+                                    เป็นเพื่อนแล้ว
+                                </button>
+                            ) : sentRequests[user._id] ? (
+                                <button
+                                    disabled
+                                    style={{
+                                        padding: "8px 14px",
+                                        borderRadius: "8px",
+                                        border: "none",
+                                        background: "#9ca3af",
+                                        color: "#fff",
+                                    }}
+                                >
+                                    ส่งคำขอแล้ว
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleAddFriend(user._id)}
+                                    disabled={sendingId === user._id}
+                                    style={{
+                                        padding: "8px 14px",
+                                        borderRadius: "8px",
+                                        border: "none",
+                                        background: "#2563eb",
+                                        color: "#fff",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    {sendingId === user._id ? "กำลังส่ง..." : "เพิ่มเพื่อน"}
+                                </button>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

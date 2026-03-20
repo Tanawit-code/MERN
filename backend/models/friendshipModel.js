@@ -9,16 +9,19 @@ const friendshipSchema = new mongoose.Schema(
                 required: true,
             },
         ],
-        name: {
+        pairKey: {
             type: String,
-            required: true
+            required: true,
+            unique: true,
         },
-        pairKey: { type: String, required: true, unique: true }, // ✅ ต้องมี
     },
     { timestamps: true }
 );
 
 friendshipSchema.index({ users: 1 });
 
-const friendshipModel = mongoose.model("Friendship", friendshipSchema);
+const friendshipModel =
+    mongoose.models.Friendship ||
+    mongoose.model("Friendship", friendshipSchema);
+
 export default friendshipModel;

@@ -1,19 +1,14 @@
-import userModel from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import userModel from "../models/userModel.js";
 
-// ================= CREATE TOKEN =================
-const createToken = (userId) => {
-  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
-};
+const createToken = (userId) =>
+  jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-// ================= COOKIE OPTIONS =================
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
@@ -21,7 +16,35 @@ const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-// ================= REGISTER =================
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp-relay.brevo.com",
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+export const sendEmail = async (to, url = "#") => {
+  await transporter.sendMail({
+    from: process.env.SENDER_EMAIL || '"Rmutt" <no-reply@rmutt.local>',
+    to,
+    subject: "ยืนยันบัญชีของคุณ",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>ยืนยันอีเมลของคุณ</h2>
+        <p>กรุณากดปุ่มด้านล่างเพื่อยืนยันอีเมล</p>
+        <a href="${url}" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;">
+          Verify Email
+        </a>
+        <p style="margin-top:16px;">หากปุ่มไม่ทำงาน ให้คัดลอกลิงก์นี้ไปเปิด:</p>
+        <p>${url}</p>
+      </div>
+    `,
+  });
+};
+
 export const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -37,7 +60,7 @@ export const register = async (req, res) => {
     if (exists) {
       return res.status(400).json({
         success: false,
-        message: "User already exists",
+        message: "อีเมลนี้ถูกใช้งานแล้ว",
       });
     }
 
@@ -50,22 +73,25 @@ export const register = async (req, res) => {
       password: hashedPassword,
       verifyOTP: verifyToken,
       verifyOTPExpire: Date.now() + 60 * 60 * 1000,
+      isVerified: false,
     });
 
-    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:5000"}/api/auth/verify-email?token=${verifyToken}`;
+    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:5000"
+      }/api/auth/verify-email?token=${verifyToken}`;
 
     try {
       await sendEmail(user.email, verifyUrl);
     } catch (emailError) {
       console.log("SEND EMAIL ERROR:", emailError.message);
+      return res.status(500).json({
+        success: false,
+        message: "สมัครสำเร็จแต่ส่งอีเมลยืนยันไม่สำเร็จ",
+      });
     }
-
-    const token = createToken(user._id);
-    res.cookie("token", token, cookieOptions);
 
     return res.status(201).json({
       success: true,
-      message: "Register success. Check your email",
+      message: "สมัครสมาชิกสำเร็จ กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี",
       user: {
         _id: user._id,
         name: user.name,
@@ -83,7 +109,96 @@ export const register = async (req, res) => {
   }
 };
 
-// ================= LOGIN =================
+export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL || "http://localhost:5173"}/verify-email?status=error&message=missing-token`
+      );
+    }
+
+    const user = await userModel.findOne({
+      verifyOTP: token,
+      verifyOTPExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL || "http://localhost:5173"}/verify-email?status=error&message=invalid-or-expired`
+      );
+    }
+
+    user.isVerified = true;
+    user.verifyOTP = "";
+    user.verifyOTPExpire = 0;
+
+    await user.save();
+
+    return res.redirect(
+      `${process.env.FRONTEND_URL || "http://localhost:5173"}/verify-email?status=success`
+    );
+  } catch (error) {
+    console.log("VERIFY EMAIL ERROR:", error);
+    return res.redirect(
+      `${process.env.FRONTEND_URL || "http://localhost:5173"}/verify-email?status=error&message=server-error`
+    );
+  }
+};
+
+export const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณาระบุ email",
+      });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบบัญชีผู้ใช้",
+      });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({
+        success: false,
+        message: "บัญชีนี้ยืนยันอีเมลแล้ว",
+      });
+    }
+
+    const verifyToken = crypto.randomBytes(32).toString("hex");
+
+    user.verifyOTP = verifyToken;
+    user.verifyOTPExpire = Date.now() + 60 * 60 * 1000;
+
+    await user.save();
+
+    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:5000"
+      }/api/auth/verify-email?token=${verifyToken}`;
+
+    await sendEmail(user.email, verifyUrl);
+
+    return res.status(200).json({
+      success: true,
+      message: "ส่งอีเมลยืนยันใหม่แล้ว",
+    });
+  } catch (error) {
+    console.log("RESEND VERIFICATION ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -111,6 +226,13 @@ export const login = async (req, res) => {
       });
     }
 
+    if (!user.isVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ",
+      });
+    }
+
     const token = createToken(user._id);
     res.cookie("token", token, cookieOptions);
 
@@ -134,7 +256,6 @@ export const login = async (req, res) => {
   }
 };
 
-// ================= LOGOUT =================
 export const logout = async (req, res) => {
   try {
     res.clearCookie("token", cookieOptions);
@@ -152,7 +273,6 @@ export const logout = async (req, res) => {
   }
 };
 
-// ================= GET ME =================
 export const getMe = async (req, res) => {
   try {
     const user = await userModel.findById(req.userId).select("-password");
@@ -177,61 +297,6 @@ export const getMe = async (req, res) => {
   }
 };
 
-// ================= SEND EMAIL =================
-export const sendEmail = async (to, url) => {
-  const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-
-  await transporter.sendMail({
-    from: '"Rmutt" <no-reply@rmutt.local>',
-    to,
-    subject: "ยืนยันบัญชีของคุณ",
-    html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>ยืนยันอีเมลของคุณ</h2>
-        <p>กรุณากดปุ่มด้านล่างเพื่อยืนยันอีเมล</p>
-        <a href="${url}" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;">
-          Verify Email
-        </a>
-      </div>
-    `,
-  });
-};
-
-// ================= VERIFY EMAIL =================
-export const verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.query;
-
-    const user = await userModel.findOne({
-      verifyOTP: token,
-      verifyOTPExpire: { $gt: Date.now() },
-    });
-
-    if (!user) {
-      return res.send("ลิงก์ยืนยันไม่ถูกต้องหรือหมดอายุแล้ว ❌");
-    }
-
-    user.isVerified = true;
-    user.verifyOTP = "";
-    user.verifyOTPExpire = 0;
-
-    await user.save();
-
-    return res.send("ยืนยันอีเมลเรียบร้อย ✅");
-  } catch (error) {
-    console.log("VERIFY EMAIL ERROR:", error);
-    return res.status(500).send("เกิดข้อผิดพลาดในการยืนยันอีเมล");
-  }
-};
-
-// ================= UPDATE PROFILE =================
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.userId;

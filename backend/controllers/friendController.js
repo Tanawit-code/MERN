@@ -3,7 +3,6 @@ import friendRequestModel from "../models/friendRequestModel.js";
 import friendshipModel from "../models/friendshipModel.js";
 import userModel from "../models/userModel.js";
 
-// helper
 const makePairKey = (userA, userB) => {
     return [String(userA), String(userB)].sort().join("_");
 };
@@ -32,13 +31,13 @@ export const searchUsers = async (req, res) => {
             .select("_id name email profilePic")
             .limit(20);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             users,
         });
     } catch (error) {
         console.log("searchUsers error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
@@ -81,8 +80,8 @@ export const sendFriendRequest = async (req, res) => {
         }
 
         const pairKey = makePairKey(senderId, receiverId);
-        const existingFriendship = await friendshipModel.findOne({ pairKey });
 
+        const existingFriendship = await friendshipModel.findOne({ pairKey });
         if (existingFriendship) {
             return res.status(400).json({
                 success: false,
@@ -90,7 +89,20 @@ export const sendFriendRequest = async (req, res) => {
             });
         }
 
-        const existingRequest = await friendRequestModel.findOne({
+        const reverseRequest = await friendRequestModel.findOne({
+            sender: receiverId,
+            receiver: senderId,
+            status: "pending",
+        });
+
+        if (reverseRequest) {
+            return res.status(400).json({
+                success: false,
+                message: "อีกฝ่ายส่งคำขอหาคุณอยู่แล้ว กรุณากดรับคำขอแทน",
+            });
+        }
+
+        let existingRequest = await friendRequestModel.findOne({
             sender: senderId,
             receiver: receiverId,
         });
@@ -110,19 +122,6 @@ export const sendFriendRequest = async (req, res) => {
                 success: true,
                 message: "ส่งคำขอเป็นเพื่อนใหม่สำเร็จ",
                 request: existingRequest,
-            });
-        }
-
-        const reverseRequest = await friendRequestModel.findOne({
-            sender: receiverId,
-            receiver: senderId,
-            status: "pending",
-        });
-
-        if (reverseRequest) {
-            return res.status(400).json({
-                success: false,
-                message: "อีกฝ่ายส่งคำขอหาคุณอยู่แล้ว กรุณากดรับคำขอแทน",
             });
         }
 
@@ -156,8 +155,6 @@ export const sendFriendRequest = async (req, res) => {
 // ดึงคำขอที่ได้รับ
 export const getReceivedFriendRequests = async (req, res) => {
     try {
-        const userId = req.userId;
-
         const requests = await friendRequestModel
             .find({
                 receiver: req.userId,
@@ -166,13 +163,13 @@ export const getReceivedFriendRequests = async (req, res) => {
             .populate("sender", "_id name email profilePic")
             .sort({ createdAt: -1 });
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             requests,
         });
     } catch (error) {
         console.log("getReceivedFriendRequests error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
@@ -192,13 +189,13 @@ export const getSentFriendRequests = async (req, res) => {
             .populate("receiver", "_id name email profilePic")
             .sort({ createdAt: -1 });
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             requests,
         });
     } catch (error) {
         console.log("getSentFriendRequests error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
@@ -212,47 +209,57 @@ export const acceptFriendRequest = async (req, res) => {
         const { requestId } = req.body;
 
         if (!requestId) {
-            return res.status(400).json({ success: false, message: "กรุณาระบุ requestId" });
-        }
-
-        const request = await friendRequestModel.findById(requestId);
-
-        if (!request) {
-            return res.status(404).json({ success: false, message: "ไม่พบคำขอเป็นเพื่อน" });
-        }
-
-        if (String(request.receiver) !== String(userId)) {
-            return res.status(403).json({ success: false, message: "คุณไม่มีสิทธิ์จัดการคำขอนี้" });
-        }
-
-        if (request.status !== "pending") {
-            return res.status(400).json({ success: false, message: "คำขอนี้ถูกจัดการไปแล้ว" });
-        }
-
-        // สร้าง pairKey
-        const makePairKey = (userA, userB) => [String(userA), String(userB)].sort().join("_");
-        const pairKey = makePairKey(request.sender, request.receiver);
-
-        // ตรวจสอบว่า friendship มีอยู่แล้วหรือยัง
-        const existingFriendship = await friendshipModel.findOne({ pairKey });
-
-        if (!existingFriendship) {
-            // ✅ สร้าง record พร้อม pairKey
-            await friendshipModel.create({
-                users: [request.sender, request.receiver],
-                pairKey, // ต้องมี
+            return res.status(400).json({
+                success: false,
+                message: "กรุณาระบุ requestId",
             });
         }
 
-        // เปลี่ยน status ของ request
+        const request = await friendRequestModel.findById(requestId);
+        if (!request) {
+            return res.status(404).json({
+                success: false,
+                message: "ไม่พบคำขอเป็นเพื่อน",
+            });
+        }
+
+        if (String(request.receiver) !== String(userId)) {
+            return res.status(403).json({
+                success: false,
+                message: "คุณไม่มีสิทธิ์จัดการคำขอนี้",
+            });
+        }
+
+        if (request.status !== "pending") {
+            return res.status(400).json({
+                success: false,
+                message: "คำขอนี้ถูกจัดการไปแล้ว",
+            });
+        }
+
+        const pairKey = makePairKey(request.sender, request.receiver);
+
+        const existingFriendship = await friendshipModel.findOne({ pairKey });
+        if (!existingFriendship) {
+            await friendshipModel.create({
+                users: [request.sender, request.receiver],
+                pairKey,
+            });
+        }
+
         request.status = "accepted";
         await request.save();
 
-        res.status(200).json({ success: true, message: "รับคำขอเป็นเพื่อนสำเร็จ" });
-
+        return res.status(200).json({
+            success: true,
+            message: "รับคำขอเป็นเพื่อนสำเร็จ",
+        });
     } catch (error) {
         console.log("acceptFriendRequest error:", error);
-        res.status(500).json({ success: false, message: error.message });
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
     }
 };
 
@@ -270,7 +277,6 @@ export const rejectFriendRequest = async (req, res) => {
         }
 
         const request = await friendRequestModel.findById(requestId);
-
         if (!request) {
             return res.status(404).json({
                 success: false,
@@ -295,13 +301,13 @@ export const rejectFriendRequest = async (req, res) => {
         request.status = "rejected";
         await request.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "ปฏิเสธคำขอเป็นเพื่อนแล้ว",
         });
     } catch (error) {
         console.log("rejectFriendRequest error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
@@ -322,7 +328,6 @@ export const cancelFriendRequest = async (req, res) => {
         }
 
         const request = await friendRequestModel.findById(requestId);
-
         if (!request) {
             return res.status(404).json({
                 success: false,
@@ -347,13 +352,13 @@ export const cancelFriendRequest = async (req, res) => {
         request.status = "cancelled";
         await request.save();
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "ยกเลิกคำขอเป็นเพื่อนแล้ว",
         });
     } catch (error) {
         console.log("cancelFriendRequest error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
@@ -366,25 +371,23 @@ export const getFriends = async (req, res) => {
         const userId = req.userId;
 
         const friendships = await friendshipModel
-            .find({
-                users: userId,
-            })
+            .find({ users: userId })
             .populate("users", "_id name email profilePic")
             .sort({ createdAt: -1 });
 
-        const friends = friendships.map((friendship) => {
-            return friendship.users.find(
-                (user) => String(user._id) !== String(userId)
-            );
-        });
+        const friends = friendships
+            .map((friendship) =>
+                friendship.users.find((user) => String(user._id) !== String(userId))
+            )
+            .filter(Boolean);
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             friends,
         });
     } catch (error) {
         console.log("getFriends error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
@@ -405,7 +408,6 @@ export const unfriend = async (req, res) => {
         }
 
         const pairKey = makePairKey(userId, friendId);
-
         const deleted = await friendshipModel.findOneAndDelete({ pairKey });
 
         if (!deleted) {
@@ -415,13 +417,13 @@ export const unfriend = async (req, res) => {
             });
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "ลบเพื่อนสำเร็จ",
         });
     } catch (error) {
         console.log("unfriend error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });

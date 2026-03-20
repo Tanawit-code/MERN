@@ -1,5 +1,6 @@
-import messageModel from "../models/MessageModel.js";
-import conversationModel from "../models/ConversationModel.js";
+import mongoose from "mongoose";
+import messageModel from "../models/messageModel.js";
+import conversationModel from "../models/conversationModel.js";
 
 // ส่งข้อความ
 export const sendMessage = async (req, res) => {
@@ -14,6 +15,13 @@ export const sendMessage = async (req, res) => {
             });
         }
 
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            return res.status(400).json({
+                success: false,
+                message: "conversationId ไม่ถูกต้อง",
+            });
+        }
+
         if (!text || !text.trim()) {
             return res.status(400).json({
                 success: false,
@@ -22,7 +30,6 @@ export const sendMessage = async (req, res) => {
         }
 
         const conversation = await conversationModel.findById(conversationId);
-
         if (!conversation) {
             return res.status(404).json({
                 success: false,
@@ -47,7 +54,6 @@ export const sendMessage = async (req, res) => {
             text: text.trim(),
         });
 
-        // อัปเดต updatedAt ของห้อง
         conversation.updatedAt = new Date();
         await conversation.save();
 
@@ -55,14 +61,14 @@ export const sendMessage = async (req, res) => {
             .findById(message._id)
             .populate("sender", "_id name email profilePic");
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             message: "ส่งข้อความสำเร็จ",
             data: populatedMessage,
         });
     } catch (error) {
         console.log("sendMessage error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
@@ -75,8 +81,14 @@ export const getMessagesByConversation = async (req, res) => {
         const userId = req.userId;
         const { conversationId } = req.params;
 
-        const conversation = await conversationModel.findById(conversationId);
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            return res.status(400).json({
+                success: false,
+                message: "conversationId ไม่ถูกต้อง",
+            });
+        }
 
+        const conversation = await conversationModel.findById(conversationId);
         if (!conversation) {
             return res.status(404).json({
                 success: false,
@@ -100,13 +112,13 @@ export const getMessagesByConversation = async (req, res) => {
             .populate("sender", "_id name email profilePic")
             .sort({ createdAt: 1 });
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             messages,
         });
     } catch (error) {
         console.log("getMessagesByConversation error:", error);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
             message: error.message,
         });
