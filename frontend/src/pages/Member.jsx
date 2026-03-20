@@ -418,7 +418,7 @@ const Member = () => {
                 {/* Sidebar ขวา */}
                 <div className="w-1/4 p-4 hidden lg:block">
                     <div className="bg-white p-4 rounded-xl shadow">
-                        <FriendsList />
+
                     </div>
                 </div>
 
