@@ -9,21 +9,24 @@ import {
 } from "../services/chatApi";
 
 function ChatPage() {
-    const { id: conversationId } = useParams();
+    const { conversationId } = useParams();
     const { userData } = useContext(AppContext);
 
     const currentUserId = userData?._id;
-    const currentUserName = userData?.name || "คุณ";
 
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState("");
     const [friendName, setFriendName] = useState("เพื่อน");
     const [loading, setLoading] = useState(true);
 
+    const [media, setMedia] = useState(null);
+    const [mediaType, setMediaType] = useState("");
+    const [mediaPreview, setMediaPreview] = useState(null);
+
     const messagesEndRef = useRef(null);
 
     const fetchConversation = async () => {
-        if (!conversationId) return;
+        if (!conversationId || !currentUserId) return;
 
         try {
             const res = await getConversationApi(conversationId);
@@ -59,21 +62,69 @@ function ChatPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
 
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert("รูปใหญ่เกิน 5MB");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setMedia(reader.result);
+            setMediaPreview(reader.result);
+            setMediaType("image");
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleVideoChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 20 * 1024 * 1024) {
+            alert("วิดีโอใหญ่เกิน 20MB");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setMedia(reader.result);
+            setMediaPreview(reader.result);
+            setMediaType("video");
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const clearMedia = () => {
+        setMedia(null);
+        setMediaType("");
+        setMediaPreview(null);
+    };
+
     const handleSend = async () => {
         if (!conversationId) {
             alert("ไม่พบ conversationId");
             return;
         }
 
-        if (!text.trim()) return;
+        if (!text.trim() && !media) return;
 
         try {
-            const res = await sendMessageApi(conversationId, text);
+            const res = await sendMessageApi(
+                conversationId,
+                text,
+                media,
+                mediaType
+            );
 
             const newMessage = res.data.data;
 
             setMessages((prev) => [...prev, newMessage]);
             setText("");
+            clearMedia();
         } catch (error) {
             alert(error.response?.data?.message || "ส่งข้อความไม่สำเร็จ");
         }
@@ -149,7 +200,33 @@ function ChatPage() {
                                             </div>
                                         )}
 
-                                        <div>{msg.text}</div>
+                                        {msg.text && <div>{msg.text}</div>}
+
+                                        {msg.media && msg.mediaType === "image" && (
+                                            <img
+                                                src={msg.media}
+                                                alt="chat-media"
+                                                style={{
+                                                    marginTop: "8px",
+                                                    maxWidth: "220px",
+                                                    borderRadius: "10px",
+                                                    display: "block",
+                                                }}
+                                            />
+                                        )}
+
+                                        {msg.media && msg.mediaType === "video" && (
+                                            <video
+                                                src={msg.media}
+                                                controls
+                                                style={{
+                                                    marginTop: "8px",
+                                                    maxWidth: "220px",
+                                                    borderRadius: "10px",
+                                                    display: "block",
+                                                }}
+                                            />
+                                        )}
 
                                         <div
                                             style={{
@@ -169,6 +246,41 @@ function ChatPage() {
 
                     <div ref={messagesEndRef} />
                 </div>
+
+                {mediaPreview && (
+                    <div style={{ marginBottom: "10px" }}>
+                        {mediaType === "image" ? (
+                            <img
+                                src={mediaPreview}
+                                alt="preview"
+                                style={{ maxWidth: "220px", borderRadius: "10px" }}
+                            />
+                        ) : (
+                            <video
+                                src={mediaPreview}
+                                controls
+                                style={{ maxWidth: "220px", borderRadius: "10px" }}
+                            />
+                        )}
+
+                        <div>
+                            <button
+                                onClick={clearMedia}
+                                style={{
+                                    marginTop: "8px",
+                                    border: "none",
+                                    background: "#dc2626",
+                                    color: "#fff",
+                                    padding: "6px 10px",
+                                    borderRadius: "8px",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                ลบไฟล์
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div style={{ display: "flex", gap: "10px" }}>
                     <input
@@ -200,6 +312,41 @@ function ChatPage() {
                     >
                         ส่ง
                     </button>
+
+                    <label
+                        style={{
+                            padding: "8px 12px",
+                            background: "#e5e7eb",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        รูป
+                        <input
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={handleImageChange}
+                        />
+                    </label>
+
+                    <label
+                        style={{
+                            padding: "8px 12px",
+                            background: "#e5e7eb",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                        }}
+                    >
+                        วิดีโอ
+                        <input
+                            type="file"
+                            accept="video/*"
+                            style={{ display: "none" }}
+                            onChange={handleVideoChange}
+                        />
+                    </label>
+
                 </div>
             </div>
         </div>

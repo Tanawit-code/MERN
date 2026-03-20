@@ -156,6 +156,16 @@ const Login = () => {
                 : "เข้าสู่ระบบ"}
           </button>
         </form>
+        {state === "Login" && (
+          <p className="text-center mt-3">
+            <span
+              onClick={() => navigate("/forgot-password")}
+              className="text-amber-400 cursor-pointer"
+            >
+              ลืมรหัสผ่าน?
+            </span>
+          </p>
+        )}
 
         {showResend && (
           <button

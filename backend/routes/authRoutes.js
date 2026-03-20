@@ -7,6 +7,8 @@ import {
   verifyEmail,
   resendVerificationEmail,
   updateProfile,
+  forgotPassword,
+  resetPassword,
 } from "../controllers/authController.js";
 import userAuth from "../middleware/authMiddleware.js";
 import upload from "../middleware/multer.js";
@@ -20,5 +22,7 @@ router.get("/member", userAuth, getMe);
 router.get("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerificationEmail);
 router.put("/update-profile", userAuth, upload.single("profilePic"), updateProfile);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 
 export default router;

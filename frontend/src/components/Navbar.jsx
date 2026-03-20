@@ -35,12 +35,16 @@ const Navbar = () => {
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span>{userData?.name || "User"}</span>
+                <Link to="/profilepage" style={{ color: "#fff", textDecoration: "none" }}>
+                    {userData?.name || "User"}
+                </Link>
+
                 <div
                     style={{
                         width: "34px",
                         height: "34px",
                         borderRadius: "50%",
+                        overflow: "hidden",
                         background: "#2563eb",
                         display: "flex",
                         justifyContent: "center",
@@ -48,8 +52,30 @@ const Navbar = () => {
                         fontWeight: "bold",
                     }}
                 >
-                    {userData?.name ? userData.name.charAt(0).toUpperCase() : "U"}
+                    {userData?.profilePic ? (
+                        <img
+                            src={`http://localhost:5000/${userData.profilePic}`}
+                            alt="profile"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                    ) : (
+                        userData?.name?.charAt(0).toUpperCase() || "U"
+                    )}
                 </div>
+
+                <button
+                    onClick={logout}
+                    style={{
+                        border: "none",
+                        background: "#dc2626",
+                        color: "#fff",
+                        padding: "8px 12px",
+                        borderRadius: "8px",
+                        cursor: "pointer",
+                    }}
+                >
+                    ออกจากระบบ
+                </button>
             </div>
         </nav>
     );

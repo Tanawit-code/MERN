@@ -16,7 +16,7 @@ function VerifyEmail() {
       return "ลิงก์ยืนยันไม่ถูกต้องหรือหมดอายุแล้ว";
     return "เกิดข้อผิดพลาดในการยืนยันอีเมล";
   };
-
+  setTimeout(() => navigate("/login"), 2000);
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-6">
       <div className="bg-white rounded-2xl shadow p-8 max-w-md w-full text-center">

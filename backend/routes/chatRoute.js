@@ -1,5 +1,5 @@
 import express from "express";
-import authUser from "../middleware/authMiddleware.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 import {
     searchUsers,
@@ -27,30 +27,30 @@ import {
 const chatRouter = express.Router();
 
 /* ---------- friend ---------- */
-chatRouter.get("/users/search", authUser, searchUsers);
-chatRouter.post("/friend-request/send", authUser, sendFriendRequest);
-chatRouter.get("/friend-request/received", authUser, getReceivedFriendRequests);
-chatRouter.get("/friend-request/sent", authUser, getSentFriendRequests);
-chatRouter.post("/friend-request/accept", authUser, acceptFriendRequest);
-chatRouter.post("/friend-request/reject", authUser, rejectFriendRequest);
-chatRouter.post("/friend-request/cancel", authUser, cancelFriendRequest);
-chatRouter.get("/friends", authUser, getFriends);
-chatRouter.post("/friends/unfriend", authUser, unfriend);
+chatRouter.get("/users/search", authMiddleware, searchUsers);
+chatRouter.post("/friend-request/send", authMiddleware, sendFriendRequest);
+chatRouter.get("/friend-request/received", authMiddleware, getReceivedFriendRequests);
+chatRouter.get("/friend-request/sent", authMiddleware, getSentFriendRequests);
+chatRouter.post("/friend-request/accept", authMiddleware, acceptFriendRequest);
+chatRouter.post("/friend-request/reject", authMiddleware, rejectFriendRequest);
+chatRouter.post("/friend-request/cancel", authMiddleware, cancelFriendRequest);
+chatRouter.get("/friends", authMiddleware, getFriends);
+chatRouter.post("/friends/unfriend", authMiddleware, unfriend);
 
 /* ---------- conversation ---------- */
 chatRouter.post(
     "/conversation/private",
-    authUser,
+    authMiddleware,
     createOrGetPrivateConversation
 );
-chatRouter.get("/conversations", authUser, getMyConversations);
-chatRouter.get("/conversation/:conversationId", authUser, getConversationById);
+chatRouter.get("/conversations", authMiddleware, getMyConversations);
+chatRouter.get("/conversation/:conversationId", authMiddleware, getConversationById);
 
 /* ---------- message ---------- */
-chatRouter.post("/message/send", authUser, sendMessage);
+chatRouter.post("/message/send", authMiddleware, sendMessage);
 chatRouter.get(
     "/messages/:conversationId",
-    authUser,
+    authMiddleware,
     getMessagesByConversation
 );
 

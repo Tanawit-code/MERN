@@ -27,8 +27,21 @@ const transporter = nodemailer.createTransport({
 });
 
 export const sendEmail = async (to, url = "#") => {
-  await transporter.sendMail({
-    from: process.env.SENDER_EMAIL || '"Rmutt" <no-reply@rmutt.local>',
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp-relay.brevo.com",
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  await transporter.verify();
+  console.log("SMTP READY");
+
+  const info = await transporter.sendMail({
+    from: process.env.SENDER_EMAIL,
     to,
     subject: "ยืนยันบัญชีของคุณ",
     html: `
@@ -43,6 +56,8 @@ export const sendEmail = async (to, url = "#") => {
       </div>
     `,
   });
+
+  console.log("MAIL SENT:", info.response);
 };
 
 export const register = async (req, res) => {
@@ -71,8 +86,8 @@ export const register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      verifyOTP: verifyToken,
-      verifyOTPExpire: Date.now() + 60 * 60 * 1000,
+      verificationToken: verifyToken,
+      verificationTokenExpire: Date.now() + 60 * 60 * 1000,
       isVerified: false,
     });
 
@@ -120,8 +135,8 @@ export const verifyEmail = async (req, res) => {
     }
 
     const user = await userModel.findOne({
-      verifyOTP: token,
-      verifyOTPExpire: { $gt: Date.now() },
+      verificationToken: token,
+      verificationTokenExpire: { $gt: Date.now() },
     });
 
     if (!user) {
@@ -131,8 +146,8 @@ export const verifyEmail = async (req, res) => {
     }
 
     user.isVerified = true;
-    user.verifyOTP = "";
-    user.verifyOTPExpire = 0;
+    user.verificationToken = "";
+    user.verificationTokenExpire = 0;
 
     await user.save();
 
@@ -176,8 +191,8 @@ export const resendVerificationEmail = async (req, res) => {
 
     const verifyToken = crypto.randomBytes(32).toString("hex");
 
-    user.verifyOTP = verifyToken;
-    user.verifyOTPExpire = Date.now() + 60 * 60 * 1000;
+    user.verificationToken = verifyToken;
+    user.verificationTokenExpire = Date.now() + 60 * 60 * 1000;
 
     await user.save();
 
@@ -310,6 +325,16 @@ export const updateProfile = async (req, res) => {
       });
     }
 
+    if (email && email !== user.email) {
+      const exists = await userModel.findOne({ email });
+      if (exists) {
+        return res.status(400).json({
+          success: false,
+          message: "อีเมลนี้ถูกใช้งานแล้ว",
+        });
+      }
+    }
+
     if (name) user.name = name;
     if (email) user.email = email;
 
@@ -344,4 +369,122 @@ export const updateProfile = async (req, res) => {
       message: error.message,
     });
   }
+};
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณาระบุอีเมล",
+      });
+    }
+
+    const user = await userModel.findOne({ email });
+
+    // กันการเดาอีเมล: ตอบ success เหมือนกัน
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: "หากอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว",
+      });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    user.resetOTP = resetToken;
+    user.resetOTPExpire = Date.now() + 60 * 60 * 1000; // 1 ชั่วโมง
+    await user.save();
+
+    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"
+      }/reset-password?token=${resetToken}`;
+
+    await sendResetPasswordEmail(user.email, resetUrl);
+
+    return res.status(200).json({
+      success: true,
+      message: "หากอีเมลนี้มีอยู่ในระบบ เราได้ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว",
+    });
+  } catch (error) {
+    console.log("FORGOT PASSWORD ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณาระบุ token และรหัสผ่านใหม่",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร",
+      });
+    }
+
+    const user = await userModel.findOne({
+      resetOTP: token,
+      resetOTPExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    user.resetOTP = "";
+    user.resetOTPExpire = 0;
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "เปลี่ยนรหัสผ่านสำเร็จ",
+    });
+  } catch (error) {
+    console.log("RESET PASSWORD ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+export const sendResetPasswordEmail = async (to, url = "#") => {
+  await transporter.verify();
+  console.log("SMTP READY");
+
+  const info = await transporter.sendMail({
+    from: process.env.SENDER_EMAIL,
+    to,
+    subject: "รีเซ็ตรหัสผ่านของคุณ",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>รีเซ็ตรหัสผ่าน</h2>
+        <p>กรุณากดปุ่มด้านล่างเพื่อตั้งรหัสผ่านใหม่</p>
+        <a href="${url}" style="display:inline-block;padding:10px 16px;background:#dc2626;color:#fff;text-decoration:none;border-radius:8px;">
+          Reset Password
+        </a>
+        <p style="margin-top:16px;">หากปุ่มไม่ทำงาน ให้คัดลอกลิงก์นี้ไปเปิด:</p>
+        <p>${url}</p>
+      </div>
+    `,
+  });
+
+  console.log("RESET MAIL SENT:", info.response);
 };

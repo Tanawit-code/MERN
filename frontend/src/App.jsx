@@ -9,9 +9,13 @@ import FriendRequests from "./pages/FriendRequests";
 import FriendsList from "./pages/FriendsList";
 import ChatPage from "./pages/ChatPage";
 
-// ✅ เพิ่ม 2 ตัวนี้
 import VerifyEmail from "./pages/VerifyEmail";
 import CheckEmail from "./pages/CheckEmail";
+
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
+import ProfilePage from "./pages/ProfilePage";
 
 const App = () => {
   return (
@@ -22,7 +26,6 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<LoginPage />} />
 
-        {/* ✅ หน้าใหม่ */}
         <Route path="/check-email" element={<CheckEmail />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
 
@@ -32,6 +35,13 @@ const App = () => {
         <Route path="/friend-requests" element={<FriendRequests />} />
         <Route path="/friends" element={<FriendsList />} />
         <Route path="/chat/:conversationId" element={<ChatPage />} />
+
+
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        <Route path="/profilepage" element={<ProfilePage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

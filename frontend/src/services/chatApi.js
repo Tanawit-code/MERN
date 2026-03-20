@@ -44,5 +44,15 @@ export const getConversationApi = (conversationId) =>
 export const getMessagesApi = (conversationId) =>
     API.get(`/messages/${conversationId}`);
 
-export const sendMessageApi = (conversationId, text) =>
-    API.post("/message/send", { conversationId, text });
+export const sendMessageApi = (
+    conversationId,
+    text,
+    media = "",
+    mediaType = ""
+) =>
+    API.post("/message/send", {
+        conversationId,
+        text,
+        media,
+        mediaType,
+    });

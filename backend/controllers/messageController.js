@@ -2,11 +2,10 @@ import mongoose from "mongoose";
 import messageModel from "../models/messageModel.js";
 import conversationModel from "../models/conversationModel.js";
 
-// ส่งข้อความ
 export const sendMessage = async (req, res) => {
     try {
         const userId = req.userId;
-        const { conversationId, text } = req.body;
+        const { conversationId, text, media, mediaType } = req.body;
 
         if (!conversationId) {
             return res.status(400).json({
@@ -22,10 +21,10 @@ export const sendMessage = async (req, res) => {
             });
         }
 
-        if (!text || !text.trim()) {
+        if ((!text || !text.trim()) && !media) {
             return res.status(400).json({
                 success: false,
-                message: "กรุณาระบุข้อความ",
+                message: "กรุณาระบุข้อความหรือไฟล์",
             });
         }
 
@@ -51,7 +50,9 @@ export const sendMessage = async (req, res) => {
         const message = await messageModel.create({
             conversationId,
             sender: userId,
-            text: text.trim(),
+            text: text?.trim() || "",
+            media: media || "",
+            mediaType: mediaType || "",
         });
 
         conversation.updatedAt = new Date();
@@ -75,7 +76,6 @@ export const sendMessage = async (req, res) => {
     }
 };
 
-// ดึงข้อความทั้งหมดในห้อง
 export const getMessagesByConversation = async (req, res) => {
     try {
         const userId = req.userId;
