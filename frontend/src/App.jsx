@@ -36,8 +36,6 @@ const App = () => {
         <Route path="/friends" element={<FriendsList />} />
         <Route path="/chat/:conversationId" element={<ChatPage />} />
 
-
-
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
