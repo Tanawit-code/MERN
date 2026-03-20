@@ -3,12 +3,13 @@ import Post from "../models/Post.js";
 // ➕ สร้างโพสต์
 export const createPost = async (req, res) => {
     try {
-        const { userId, name, content } = req.body;
+        const { userId, name, content, image } = req.body;
 
         const newPost = new Post({
             userId,
             name,
-            content
+            content,
+            image
         });
 
         await newPost.save();
@@ -18,8 +19,9 @@ export const createPost = async (req, res) => {
             post: newPost
         });
 
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+    } catch (err) {
+        console.log("CREATE POST ERROR:", err); // 👈 เพิ่มบรรทัดนี้
+        res.status(500).json({ success: false, message: err.message });
     }
 };
 

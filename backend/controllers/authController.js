@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-
+import fs from "fs";
+import path from "path";
 
 // ================= REGISTER =================
 export const register = async (req, res) => {
@@ -153,6 +154,11 @@ export const logout = async (req, res) => {
     })
 
   }
+  const token = jwt.sign(
+    { id: user._id },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
 
 }
 
@@ -243,4 +249,51 @@ export const verifyEmail = async (req, res) => {
 
   res.send("ยืนยันอีเมลเรียบร้อย ✅");
 
+};
+// อัปเดตข้อมูลผู้ใช้ + รูปโปรไฟล์
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { name, email } = req.body;
+
+    // หา user ใน DB
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "ไม่พบผู้ใช้" });
+    }
+
+    // อัปเดตชื่อและอีเมลถ้ามีส่งมา
+    if (name) user.name = name;
+    if (email) user.email = email;
+
+    // อัปโหลดรูปโปรไฟล์
+    if (req.file) {
+      // ลบรูปเดิมถ้ามี
+      if (user.profilePic) {
+        const oldPath = path.join(process.cwd(), user.profilePic);
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      }
+
+      // เซฟ path ของไฟล์ใหม่
+      user.profilePic = req.file.path;
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "อัปเดตข้อมูลผู้ใช้สำเร็จ",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
+    });
+  } catch (error) {
+    console.log("updateProfile error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
 };

@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
+import FriendsList from "./FriendsList";
+import { Link } from "react-router-dom";
 
 const Member = () => {
 
@@ -13,6 +15,8 @@ const Member = () => {
     const [posts, setPosts] = useState([]);
     const [commentText, setCommentText] = useState({});
     const [openMenu, setOpenMenu] = useState(null);
+    const [image, setImage] = useState(null);
+    const [preview, setPreview] = useState(null);
 
     useEffect(() => {
         if (!isLoading && !isLoggedIn) {
@@ -47,7 +51,7 @@ const Member = () => {
 
     // ✅ สร้างโพสต์
     const handlePost = async () => {
-        if (!content || loadingPost) return;
+        if ((!content && !image) || loadingPost) return;
 
         setLoadingPost(true);
 
@@ -60,7 +64,8 @@ const Member = () => {
                 body: JSON.stringify({
                     userId: userData._id,
                     name: userData.name,
-                    content
+                    content,
+                    image // 🔥 ต้องมี
                 })
             });
 
@@ -68,6 +73,8 @@ const Member = () => {
 
             if (data.success) {
                 setContent("");
+                setImage(null);
+                setPreview(null);
                 fetchPosts();
             }
         } catch (err) {
@@ -136,7 +143,7 @@ const Member = () => {
 
             const data = await res.json();
 
-            console.log("COMMENT RESPONSE:", data); // 👈 debug
+            console.log("COMMENT RESPONSE:", data);
 
             if (data.success) {
                 setCommentText({ ...commentText, [postId]: "" });
@@ -192,9 +199,13 @@ const Member = () => {
                 <div className="w-1/4 p-4 hidden md:block">
                     <div className="bg-white p-4 rounded-xl shadow">
                         <p className="font-semibold">เมนู</p>
-                        <ul className="mt-2 space-y-2">
-                            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">🏠 หน้าแรก</li>
-                            <li className="hover:bg-gray-100 p-2 rounded cursor-pointer">👤 โปรไฟล์</li>
+                        <ul className="mt-2 space-y-2 flex flex-col" >
+                            <Link to="/Profilepage" className="hover:bg-gray-100 p-2 rounded cursor-pointer">
+                                👤 โปรไฟล์
+                            </Link>
+                            <Link to="/member" className="hover:bg-gray-100 p-2 rounded cursor-pointer">
+                                🔍ค้นหาผู้ใช้อื่น
+                            </Link>
                         </ul>
                     </div>
                 </div>
@@ -219,14 +230,55 @@ const Member = () => {
                             />
                         </div>
 
-                        <button
-                            onClick={handlePost}
-                            disabled={loadingPost}
-                            className="mt-3 bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
-                        >
-                            {loadingPost ? "กำลังโพสต์..." : "โพสต์"}
-                        </button>
+                        <div className="mt-3 flex items-center gap-3">
+                            <label className="cursor-pointer text-blue-500 text-sm inline-block">
+                                📷 เพิ่มรูป
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
 
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setImage(reader.result);
+                                            setPreview(reader.result);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }}
+                                />
+                            </label>
+
+                            <button
+                                onClick={handlePost}
+                                disabled={loadingPost}
+                                className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
+                            >
+                                {loadingPost ? "กำลังโพสต์..." : "โพสต์"}
+                            </button>
+                        </div>
+
+                        {preview && (
+                            <div className="mt-3">
+                                <img
+                                    src={preview}
+                                    alt="preview"
+                                    className="rounded-xl max-h-60 object-cover border"
+                                />
+
+                                <button
+                                    onClick={() => {
+                                        setImage(null);
+                                        setPreview(null);
+                                    }}
+                                    className="text-red-500 text-xs mt-2"
+                                >
+                                    ลบรูป
+                                </button>
+                            </div>
+                        )}
                     </div>
 
 
@@ -236,12 +288,12 @@ const Member = () => {
                         <div key={post._id} className="bg-white p-4 rounded-xl shadow mb-4">
                             <div className="relative">
                                 {post.userId === userData._id && (
-                                    <div className="absolute top-0 right-0">
+                                    <div className="absolute top-0 right-0 ">
                                         <button
                                             onClick={() =>
                                                 setOpenMenu(openMenu === post._id ? null : post._id)
                                             }
-                                            className="text-gray-500 hover:text-black"
+                                            className=" text-gray-500 hover:text-black "
                                         >
                                             ⋯
                                         </button>
@@ -266,6 +318,14 @@ const Member = () => {
                             </p>
 
                             <p className="mt-2 text-gray-600">{post.content}</p>
+
+                            {post.image && (
+                                <img
+                                    src={post.image}
+                                    alt="post"
+                                    className="mt-3 w-full max-h-[400px] max-w-[400px] object-cover rounded-xl border"
+                                />
+                            )}
                             {/* กด like */}
                             <button
                                 onClick={() => handleLike(post._id)}
@@ -358,13 +418,13 @@ const Member = () => {
                 {/* Sidebar ขวา */}
                 <div className="w-1/4 p-4 hidden lg:block">
                     <div className="bg-white p-4 rounded-xl shadow">
-                        <p>เพื่อนออนไลน์</p>
+                        <FriendsList />
                     </div>
                 </div>
 
             </div>
 
-        </div>
+        </div >
     );
 };
 

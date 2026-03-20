@@ -11,7 +11,7 @@ const postSchema = new mongoose.Schema({
     },
     content: {
         type: String,
-        required: true
+        default: ""
     },
     image: {
         type: String, // (optional)
@@ -30,7 +30,8 @@ const postSchema = new mongoose.Schema({
                 default: Date.now
             }
         }
-    ]
+    ],
+
 }, { timestamps: true });
 
 const Post = mongoose.model("Post", postSchema);
