@@ -21,8 +21,6 @@ export const createPost = async (req, res) => {
 
         const newPost = new Post({
             userId,
-            name,
-            profilePic: profilePic || "",
             content: content || "",
             image: image || "",
             video: video || "",
@@ -46,17 +44,17 @@ export const createPost = async (req, res) => {
 // 📥 ดึงโพสต์ทั้งหมด
 export const getPosts = async (req, res) => {
     try {
-        const posts = await Post.find().sort({ createdAt: -1 });
+        const posts = await Post.find()
+            .populate("userId", "name profilePic")
+            .sort({ createdAt: -1 });
 
-        return res.json({
+        res.json({
             success: true,
-            posts,
+            posts
         });
+
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: error.message,
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 };
 

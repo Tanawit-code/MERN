@@ -430,19 +430,19 @@ const Home = () => {
               </div>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
-                  {post.profilePic ? (
+                  {post.userId?.profilePic ? (
                     <img
-                      src={`http://localhost:5000/${post.profilePic}`}
+                      src={`http://localhost:5000/${post.userId.profilePic}`}
                       alt="profile"
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    post.name?.charAt(0).toUpperCase()
+                    post.userId?.name?.charAt(0).toUpperCase()
                   )}
                 </div>
 
                 <div>
-                  <p className="font-semibold">{post.name}</p>
+                  <p className="font-semibold">{post.userId?.name}</p>
                   <p className="text-xs text-gray-400">
                     {new Date(post.createdAt).toLocaleString()}
                   </p>

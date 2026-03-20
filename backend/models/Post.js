@@ -25,16 +25,9 @@ const commentSchema = new mongoose.Schema(
 const postSchema = new mongoose.Schema(
     {
         userId: {
-            type: String,
-            required: true,
-        },
-        name: {
-            type: String,
-            required: true,
-        },
-        profilePic: {
-            type: String,
-            default: "",
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "user",
+            required: true
         },
         content: {
             type: String,
