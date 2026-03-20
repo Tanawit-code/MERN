@@ -6,23 +6,42 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 
+// ================= CREATE TOKEN =================
+const createToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
+};
+
+// ================= COOKIE OPTIONS =================
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 // ================= REGISTER =================
 export const register = async (req, res) => {
   try {
-
     const { name, email, password } = req.body;
 
-    const exists = await userModel.findOne({ email });
-
-    if (exists) {
-      return res.json({
+    if (!name || !email || !password) {
+      return res.status(400).json({
         success: false,
-        message: "User already exists"
+        message: "กรุณากรอก name, email และ password ให้ครบ",
+      });
+    }
+
+    const exists = await userModel.findOne({ email });
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists",
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const verifyToken = crypto.randomBytes(32).toString("hex");
 
     const user = await userModel.create({
@@ -30,245 +49,206 @@ export const register = async (req, res) => {
       email,
       password: hashedPassword,
       verifyOTP: verifyToken,
-      verifyOTPExpire: Date.now() + 3600000
+      verifyOTPExpire: Date.now() + 60 * 60 * 1000,
     });
 
-    const verifyUrl =
-      `http://localhost:5000/api/auth/verify-email?token=${verifyToken}`;
+    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:5000"}/api/auth/verify-email?token=${verifyToken}`;
 
+    try {
+      await sendEmail(user.email, verifyUrl);
+    } catch (emailError) {
+      console.log("SEND EMAIL ERROR:", emailError.message);
+    }
 
-    await sendEmail(user.email, verifyUrl);
+    const token = createToken(user._id);
+    res.cookie("token", token, cookieOptions);
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
-    res.json({
+    return res.status(201).json({
       success: true,
-      message: "Register success. Check your email"
+      message: "Register success. Check your email",
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        isVerified: user.isVerified,
+        profilePic: user.profilePic,
+      },
     });
-
   } catch (error) {
-
     console.log("REGISTER ERROR:", error);
-
-    res.json({
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
-
-
   }
 };
 
-
 // ================= LOGIN =================
 export const login = async (req, res) => {
-
   try {
-
     const { email, password } = req.body;
 
-    const user = await userModel.findOne({ email });
-
-    if (!user) {
-      return res.json({
+    if (!email || !password) {
+      return res.status(400).json({
         success: false,
-        message: "User not found"
+        message: "กรุณากรอก email และ password",
+      });
+    }
+
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 
     const match = await bcrypt.compare(password, user.password);
-
     if (!match) {
-      return res.json({
+      return res.status(400).json({
         success: false,
-        message: "Wrong password"
+        message: "Wrong password",
       });
     }
 
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const token = createToken(user._id);
+    res.cookie("token", token, cookieOptions);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax"
-    });
-
-    res.json({
+    return res.status(200).json({
       success: true,
-      user
-    });
-    res.json({
-      success: true,
+      message: "Login success",
       user: {
+        _id: user._id,
         name: user.name,
-        email: user.email
-      }
+        email: user.email,
+        isVerified: user.isVerified,
+        profilePic: user.profilePic,
+      },
     });
-
   } catch (error) {
-
-    res.json({
+    console.log("LOGIN ERROR:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
     });
-
   }
-
 };
 
 // ================= LOGOUT =================
 export const logout = async (req, res) => {
-
   try {
+    res.clearCookie("token", cookieOptions);
 
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict"
-    })
-
-    res.json({
+    return res.status(200).json({
       success: true,
-      message: "Logout success"
-    })
-
+      message: "Logout success",
+    });
   } catch (error) {
-
-    res.json({
+    console.log("LOGOUT ERROR:", error);
+    return res.status(500).json({
       success: false,
-      message: error.message
-    })
-
+      message: error.message,
+    });
   }
-  const token = jwt.sign(
-    { id: user._id },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-
-}
-
-// ================= Getme =================
-export const getMe = async (req, res) => {
-  try {
-    const user = await userModel.findById(req.userId).select('-password')
-    if (!user) {
-      return res.json({
-        success: false,
-        message: "ไม่พบข้อมูลผู้ใช้"
-      })
-    }
-    return res.json({
-      success: true,
-      user,
-    })
-  } catch {
-
-  }
-}
-
-
-// ================= SEND EMAIL =================
-
-export const sendEmail = async (to, url) => {
-
-  const transporter = nodemailer.createTransport({
-
-    host: "smtp-relay.brevo.com",
-    port: 587,
-
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-
-  });
-
-  const info = await transporter.sendMail({
-
-    from: `"Rmutt" <freshjk24@gmail.com>`,
-    to,
-
-    subject: "ยืนยันบัญชีของคุณ",
-
-    html: `
-      <h2>ยืนยันอีเมลของคุณ</h2>
-
-      <p>กรุณากดปุ่มด้านล่างเพื่อยืนยันอีเมล</p>
-
-      <a href="${url}"
-      style="
-        padding:12px 20px;
-        background:#4CAF50;
-        color:white;
-        text-decoration:none;
-        border-radius:5px;
-      ">
-        Verify Email
-      </a>
-    `
-
-  });
-
 };
 
+// ================= GET ME =================
+export const getMe = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบข้อมูลผู้ใช้",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.log("GET ME ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ================= SEND EMAIL =================
+export const sendEmail = async (to, url) => {
+  const transporter = nodemailer.createTransport({
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: '"Rmutt" <no-reply@rmutt.local>',
+    to,
+    subject: "ยืนยันบัญชีของคุณ",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>ยืนยันอีเมลของคุณ</h2>
+        <p>กรุณากดปุ่มด้านล่างเพื่อยืนยันอีเมล</p>
+        <a href="${url}" style="display:inline-block;padding:10px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px;">
+          Verify Email
+        </a>
+      </div>
+    `,
+  });
+};
 
 // ================= VERIFY EMAIL =================
 export const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
 
-  const { token } = req.query;
+    const user = await userModel.findOne({
+      verifyOTP: token,
+      verifyOTPExpire: { $gt: Date.now() },
+    });
 
-  const user = await userModel.findOne({
-    verifyOTP: token,
-    verifyOTPExpire: { $gt: Date.now() }
-  });
+    if (!user) {
+      return res.send("ลิงก์ยืนยันไม่ถูกต้องหรือหมดอายุแล้ว ❌");
+    }
 
-  if (!user) {
-    return res.send("ลิ้งยืนยันไม่ถูกต้องหรือหมดอายุแล้ว ❌");
+    user.isVerified = true;
+    user.verifyOTP = "";
+    user.verifyOTPExpire = 0;
+
+    await user.save();
+
+    return res.send("ยืนยันอีเมลเรียบร้อย ✅");
+  } catch (error) {
+    console.log("VERIFY EMAIL ERROR:", error);
+    return res.status(500).send("เกิดข้อผิดพลาดในการยืนยันอีเมล");
   }
-
-  user.isVerified = true;
-  user.verifyOTP = "";
-  user.verifyOTPExpire = 0;
-
-  await user.save();
-
-  res.send("ยืนยันอีเมลเรียบร้อย ✅");
-
 };
-// อัปเดตข้อมูลผู้ใช้ + รูปโปรไฟล์
+
+// ================= UPDATE PROFILE =================
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.userId;
     const { name, email } = req.body;
 
-    // หา user ใน DB
     const user = await userModel.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "ไม่พบผู้ใช้" });
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบผู้ใช้",
+      });
     }
 
-    // อัปเดตชื่อและอีเมลถ้ามีส่งมา
     if (name) user.name = name;
     if (email) user.email = email;
 
-    // อัปโหลดรูปโปรไฟล์
     if (req.file) {
-      // ลบรูปเดิมถ้ามี
       if (user.profilePic) {
         const oldPath = path.join(process.cwd(), user.profilePic);
         if (fs.existsSync(oldPath)) {
@@ -276,13 +256,12 @@ export const updateProfile = async (req, res) => {
         }
       }
 
-      // เซฟ path ของไฟล์ใหม่
-      user.profilePic = req.file.path;
+      user.profilePic = req.file.path.replace(/\\/g, "/");
     }
 
     await user.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "อัปเดตข้อมูลผู้ใช้สำเร็จ",
       user: {
@@ -290,10 +269,14 @@ export const updateProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         profilePic: user.profilePic,
+        isVerified: user.isVerified,
       },
     });
   } catch (error) {
-    console.log("updateProfile error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    console.log("UPDATE PROFILE ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
