@@ -44,7 +44,7 @@ const GroupDetailPage = () => {
         try {
             const data = await getGroupPosts(groupId);
             if (data.success) {
-                setPosts(data.หposts || []);
+                setPosts(data.posts || []);
             }
         } catch (err) {
             console.error("โหลด post group ไม่สำเร็จ:", err);

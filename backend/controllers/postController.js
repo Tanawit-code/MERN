@@ -71,20 +71,18 @@ export const createPost = async (req, res) => {
 // 📥 ดึงโพสต์ทั้งหมด
 export const getPosts = async (req, res) => {
     try {
-        const posts = await Post.find()
+        const posts = await Post.find({ groupId: null })
             .populate("userId", "name profilePic")
             .sort({ createdAt: -1 });
 
         res.json({
             success: true,
-            posts
+            posts,
         });
-
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
-
 // 👍 ไลก์ / ยกเลิกไลก์
 export const toggleLike = async (req, res) => {
     try {

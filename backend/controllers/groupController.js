@@ -210,7 +210,7 @@ export const getGroupPosts = async (req, res) => {
             });
         }
 
-        // 🔐 เช็คสมาชิก
+        // // 🔐 เช็คสมาชิก
         // const isMember = group.members.some(
         //     (memberId) => memberId.toString() === req.userId
         // );
@@ -222,7 +222,7 @@ export const getGroupPosts = async (req, res) => {
         //     });
         // }
 
-        const posts = await Post.find({ groupId })
+        const posts = await Post.find({ groupId: group._id })
             .populate("userId", "name profilePic")
             .sort({ createdAt: -1 });
 
