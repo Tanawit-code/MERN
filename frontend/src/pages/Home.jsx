@@ -282,7 +282,7 @@ const Home = () => {
     <div className="bg-gray-100 min-h-screen">
       <Navbar />
 
-      <div className="flex pt-16">
+      <div className="flex pt-6">
         <div className="w-1/4 p-4 hidden md:block">
           <div className="bg-white p-4 rounded-xl shadow">
             <p className="font-semibold">เมนู</p>
@@ -316,12 +316,7 @@ const Home = () => {
                 👥 รายชื่อเพื่อน
               </Link>
 
-              <button
-                onClick={handleLogout}
-                className="text-left hover:bg-gray-100 p-2 rounded cursor-pointer text-red-500"
-              >
-                🚪 ออกจากระบบ
-              </button>
+
             </ul>
           </div>
         </div>
@@ -490,7 +485,7 @@ const Home = () => {
               <div className="mt-3 flex gap-2 mt-3 border-t pt-3"></div>
               <button
                 onClick={() => handleLike(post._id)}
-                className={`hover:text-blue-600 ${post.likes?.includes(userData._id) ? "text-blue-600 font-semibold cursor-pointer" : ""
+                className={`hover:text-blue-600 cursor-pointer ${post.likes?.includes(userData._id) ? "text-blue-600 font-semibold cursor-pointer" : ""
                   }`}
               >
                 👍 ถูกใจ {post.likes?.length || 0}
@@ -520,15 +515,39 @@ const Home = () => {
               </div>
 
               <div className="mt-3 space-y-2">
+
                 {(Array.isArray(post.comments) ? post.comments : [])
+
                   .filter((c) => c?.name && c?.text)
                   .map((c, i) => (
+
                     <div
                       key={c._id || i}
                       className="flex gap-2 items-start relative"
                     >
-                      <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm">
-                        {c.name.charAt(0).toUpperCase()}
+                      <div
+                        style={{
+                          width: "34px",
+                          height: "34px",
+                          borderRadius: "50%",
+                          overflow: "hidden",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          fontWeight: "bold",
+                          backgroundColor: "#3b82f6",
+                          color: "white",
+                        }}
+                      >
+                        {c.profilePic ? (
+                          <img
+                            src={`http://localhost:5000/${c.profilePic}`}
+                            alt="profile"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        ) : (
+                          c.name?.charAt(0).toUpperCase() || "U"
+                        )}
                       </div>
 
                       <div className="bg-gray-100 p-2 rounded w-full relative">

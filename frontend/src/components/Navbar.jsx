@@ -29,10 +29,10 @@ const Navbar = () => {
         >
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                 <Link to="/" style={linkStyle("/")}>หน้าแรก</Link>
-                <Link to="/search" style={linkStyle("/search")}>ค้นหา</Link>
+                <Link to="/search" style={linkStyle("/search")}>ค้นหาผู้ใช้</Link>
                 <Link to="/friend-requests" style={linkStyle("/friend-requests")}>คำขอเพื่อน</Link>
                 <Link to="/friends" style={linkStyle("/friends")}>เพื่อน</Link>
-                <Link to="/groups" style={linkStyle("/group ")}>กลุ่ม</Link>
+                <Link to="/groups" style={linkStyle("/group ")}>ค้นหากลุ่ม</Link>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
@@ -53,15 +53,17 @@ const Navbar = () => {
                         fontWeight: "bold",
                     }}
                 >
-                    {userData?.profilePic ? (
-                        <img
-                            src={`http://localhost:5000/${userData.profilePic}`}
-                            alt="profile"
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                        />
-                    ) : (
-                        userData?.name?.charAt(0).toUpperCase() || "U"
-                    )}
+                    <Link to="/profilepage">
+                        {userData?.profilePic ? (
+                            <img
+                                src={`http://localhost:5000/${userData.profilePic}`}
+                                alt="profile"
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                        ) : (
+                            userData?.name?.charAt(0).toUpperCase() || "U"
+                        )}
+                    </Link>
                 </div>
 
                 <button

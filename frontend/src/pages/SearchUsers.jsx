@@ -33,7 +33,10 @@ function SearchUsers() {
 
             setSentRequests(sentMap);
         } catch (error) {
-            console.log("โหลดคำขอที่ส่งไปแล้วไม่สำเร็จ", error.response?.data || error.message);
+            console.log(
+                "โหลดคำขอที่ส่งไปแล้วไม่สำเร็จ",
+                error.response?.data || error.message
+            );
         }
     };
 
@@ -49,7 +52,10 @@ function SearchUsers() {
 
             setFriendMap(map);
         } catch (error) {
-            console.log("โหลดรายชื่อเพื่อนไม่สำเร็จ", error.response?.data || error.message);
+            console.log(
+                "โหลดรายชื่อเพื่อนไม่สำเร็จ",
+                error.response?.data || error.message
+            );
         }
     };
 
@@ -111,7 +117,14 @@ function SearchUsers() {
             <div style={{ maxWidth: "900px", margin: "0 auto", padding: "24px" }}>
                 <h2 style={{ marginBottom: "20px" }}>ค้นหาผู้ใช้</h2>
 
-                <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
+                <div
+                    style={{
+                        display: "flex",
+                        gap: "10px",
+                        marginBottom: "20px",
+                        flexWrap: "wrap",
+                    }}
+                >
                     <input
                         type="text"
                         placeholder="พิมพ์ชื่อหรืออีเมล"
@@ -164,9 +177,54 @@ function SearchUsers() {
                                 gap: "12px",
                             }}
                         >
-                            <div>
-                                <h4 style={{ margin: 0 }}>{user.name || user.username || "-"}</h4>
-                                <p style={{ margin: "6px 0 0", color: "#666" }}>{user.email}</p>
+                            <div
+                                style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "12px",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        width: "48px",
+                                        height: "48px",
+                                        borderRadius: "50%",
+                                        overflow: "hidden",
+                                        background: "#2563eb",
+                                        color: "#fff",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontWeight: "bold",
+                                        fontSize: "18px",
+                                        flexShrink: 0,
+                                    }}
+                                >
+                                    {user.profilePic ? (
+                                        <img
+                                            src={`http://localhost:5000/${user.profilePic}`}
+                                            alt="profile"
+                                            style={{
+                                                width: "100%",
+                                                height: "100%",
+                                                objectFit: "cover",
+                                            }}
+                                        />
+                                    ) : (
+                                        (user.name || user.username || "U")
+                                            .charAt(0)
+                                            .toUpperCase()
+                                    )}
+                                </div>
+
+                                <div>
+                                    <h4 style={{ margin: 0 }}>
+                                        {user.name || user.username || "-"}
+                                    </h4>
+                                    <p style={{ margin: "6px 0 0", color: "#666" }}>
+                                        {user.email}
+                                    </p>
+                                </div>
                             </div>
 
                             {friendMap[user._id] ? (

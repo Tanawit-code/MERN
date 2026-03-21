@@ -154,6 +154,7 @@ export const addComment = async (req, res) => {
         const newComment = {
             userId: req.userId,
             name: user?.name || "",
+            profilePic: user?.profilePic || "",
             text: text.trim(),
             createdAt: new Date(),
         };
@@ -161,9 +162,14 @@ export const addComment = async (req, res) => {
         post.comments.push(newComment);
         await post.save();
 
+        const updatedPost = await Post.findById(id).populate(
+            "userId",
+            "name profilePic"
+        );
+
         return res.json({
             success: true,
-            post,
+            post: updatedPost,
         });
     } catch (error) {
         return res.status(500).json({
@@ -193,9 +199,14 @@ export const deleteComment = async (req, res) => {
 
         await post.save();
 
+        const updatedPost = await Post.findById(postId).populate(
+            "userId",
+            "name profilePic"
+        );
+
         return res.json({
             success: true,
-            post,
+            post: updatedPost,
         });
     } catch (err) {
         return res.status(500).json({

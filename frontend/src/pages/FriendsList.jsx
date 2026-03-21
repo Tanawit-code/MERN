@@ -37,8 +37,17 @@ function FriendsList() {
         <div className="bg-gray-100 min-h-screen">
             <Navbar />
             <div className="bg-gray-100 min-h-screen">
-                <div style={{ maxWidth: "600px", margin: "20px auto", padding: "0 20px", paddingTop: "80px" }}>
-                    <h2 style={{ textAlign: "center", marginBottom: "20px" }}>รายชื่อเพื่อน</h2>
+                <div
+                    style={{
+                        maxWidth: "600px",
+                        margin: "20px auto",
+                        padding: "0 20px",
+                        paddingTop: "80px",
+                    }}
+                >
+                    <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
+                        รายชื่อเพื่อน
+                    </h2>
 
                     {friends.length === 0 ? (
                         <p style={{ textAlign: "center", color: "#555" }}>ยังไม่มีเพื่อน</p>
@@ -58,12 +67,71 @@ function FriendsList() {
                                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                                     transition: "transform 0.2s",
                                 }}
-                                onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.02)")}
-                                onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                                onMouseEnter={(e) =>
+                                    (e.currentTarget.style.transform = "scale(1.02)")
+                                }
+                                onMouseLeave={(e) =>
+                                    (e.currentTarget.style.transform = "scale(1)")
+                                }
                             >
-                                <div>
-                                    <p style={{ margin: 0, fontWeight: "bold", fontSize: "15px", }}>{friend.name}</p>
-                                    <p style={{ margin: 0, fontSize: "13px", color: "#666" }}>{friend.email}</p>
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "12px",
+                                    }}
+                                >
+                                    <div
+                                        style={{
+                                            width: "48px",
+                                            height: "48px",
+                                            borderRadius: "50%",
+                                            overflow: "hidden",
+                                            backgroundColor: "#2e6df5",
+                                            color: "#fff",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontWeight: "bold",
+                                            fontSize: "18px",
+                                            flexShrink: 0,
+                                        }}
+                                    >
+                                        {friend.profilePic ? (
+                                            <img
+                                                src={`http://localhost:5000/${friend.profilePic}`}
+                                                alt="profile"
+                                                style={{
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    objectFit: "cover",
+                                                }}
+                                            />
+                                        ) : (
+                                            friend.name?.charAt(0).toUpperCase() || "U"
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <p
+                                            style={{
+                                                margin: 0,
+                                                fontWeight: "bold",
+                                                fontSize: "15px",
+                                            }}
+                                        >
+                                            {friend.name}
+                                        </p>
+                                        <p
+                                            style={{
+                                                margin: 0,
+                                                fontSize: "13px",
+                                                color: "#666",
+                                            }}
+                                        >
+                                            {friend.email}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <button

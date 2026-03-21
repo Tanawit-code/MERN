@@ -17,6 +17,7 @@ function ChatPage() {
     const [messages, setMessages] = useState([]);
     const [text, setText] = useState("");
     const [friendName, setFriendName] = useState("เพื่อน");
+    const [friendProfilePic, setFriendProfilePic] = useState("");
     const [loading, setLoading] = useState(true);
 
     const [media, setMedia] = useState(null);
@@ -33,6 +34,7 @@ function ChatPage() {
             const members = res.data.conversation?.members || [];
             const friend = members.find((m) => m._id !== currentUserId);
             setFriendName(friend?.name || "เพื่อน");
+            setFriendProfilePic(friend?.profilePic || "");
         } catch (error) {
             console.log(error.response?.data || error.message);
         }
@@ -149,7 +151,54 @@ function ChatPage() {
                     height: "calc(100vh - 90px)",
                 }}
             >
-                <h2 style={{ marginBottom: "16px" }}>ห้องแชทกับ {friendName}</h2>
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        marginBottom: "16px",
+                        background: "#fff",
+                        padding: "12px 16px",
+                        borderRadius: "14px",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    }}
+                >
+                    <div
+                        style={{
+                            width: "44px",
+                            height: "44px",
+                            borderRadius: "50%",
+                            overflow: "hidden",
+                            background: "#2563eb",
+                            color: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "bold",
+                            fontSize: "18px",
+                            flexShrink: 0,
+                        }}
+                    >
+                        {friendProfilePic ? (
+                            <img
+                                src={`http://localhost:5000/${friendProfilePic}`}
+                                alt="friend-profile"
+                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                        ) : (
+                            friendName?.charAt(0).toUpperCase() || "F"
+                        )}
+                    </div>
+
+                    <div>
+                        <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700" }}>
+                            {friendName}
+                        </h2>
+                        <p style={{ margin: 0, color: "#6b7280", fontSize: "14px" }}>
+                            ห้องแชทส่วนตัว
+                        </p>
+                    </div>
+                </div>
 
                 <div
                     style={{
@@ -181,62 +230,100 @@ function ChatPage() {
                                 >
                                     <div
                                         style={{
-                                            maxWidth: "70%",
-                                            background: isMe ? "#2563eb" : "#e5e7eb",
-                                            color: isMe ? "#fff" : "#111827",
-                                            padding: "10px 14px",
-                                            borderRadius: "14px",
+                                            display: "flex",
+                                            alignItems: "flex-end",
+                                            gap: "8px",
+                                            flexDirection: isMe ? "row-reverse" : "row",
+                                            maxWidth: "80%",
                                         }}
                                     >
-                                        {!isMe && msg.sender?.name && (
+                                        {!isMe && (
                                             <div
                                                 style={{
-                                                    fontSize: "12px",
+                                                    width: "34px",
+                                                    height: "34px",
+                                                    borderRadius: "50%",
+                                                    overflow: "hidden",
+                                                    background: "#2563eb",
+                                                    color: "#fff",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
                                                     fontWeight: "bold",
-                                                    marginBottom: "4px",
+                                                    flexShrink: 0,
                                                 }}
                                             >
-                                                {msg.sender.name}
+                                                {msg.sender?.profilePic ? (
+                                                    <img
+                                                        src={`http://localhost:5000/${msg.sender.profilePic}`}
+                                                        alt="sender-profile"
+                                                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                    />
+                                                ) : (
+                                                    msg.sender?.name?.charAt(0).toUpperCase() || "U"
+                                                )}
                                             </div>
-                                        )}
-
-                                        {msg.text && <div>{msg.text}</div>}
-
-                                        {msg.media && msg.mediaType === "image" && (
-                                            <img
-                                                src={msg.media}
-                                                alt="chat-media"
-                                                style={{
-                                                    marginTop: "8px",
-                                                    maxWidth: "220px",
-                                                    borderRadius: "10px",
-                                                    display: "block",
-                                                }}
-                                            />
-                                        )}
-
-                                        {msg.media && msg.mediaType === "video" && (
-                                            <video
-                                                src={msg.media}
-                                                controls
-                                                style={{
-                                                    marginTop: "8px",
-                                                    maxWidth: "220px",
-                                                    borderRadius: "10px",
-                                                    display: "block",
-                                                }}
-                                            />
                                         )}
 
                                         <div
                                             style={{
-                                                fontSize: "11px",
-                                                opacity: 0.8,
-                                                marginTop: "6px",
-                                                textAlign: "right",
+                                                maxWidth: "100%",
+                                                background: isMe ? "#2563eb" : "#e5e7eb",
+                                                color: isMe ? "#fff" : "#111827",
+                                                padding: "10px 14px",
+                                                borderRadius: "14px",
                                             }}
                                         >
-                                            {formatTime(msg.createdAt)}
+                                            {!isMe && msg.sender?.name && (
+                                                <div
+                                                    style={{
+                                                        fontSize: "12px",
+                                                        fontWeight: "bold",
+                                                        marginBottom: "4px",
+                                                    }}
+                                                >
+                                                    {msg.sender.name}
+                                                </div>
+                                            )}
+
+                                            {msg.text && <div>{msg.text}</div>}
+
+                                            {msg.media && msg.mediaType === "image" && (
+                                                <img
+                                                    src={msg.media}
+                                                    alt="chat-media"
+                                                    style={{
+                                                        marginTop: "8px",
+                                                        maxWidth: "220px",
+                                                        borderRadius: "10px",
+                                                        display: "block",
+                                                    }}
+                                                />
+                                            )}
+
+                                            {msg.media && msg.mediaType === "video" && (
+                                                <video
+                                                    src={msg.media}
+                                                    controls
+                                                    style={{
+                                                        marginTop: "8px",
+                                                        maxWidth: "220px",
+                                                        borderRadius: "10px",
+                                                        display: "block",
+                                                    }}
+                                                />
+                                            )}
+
+                                            <div
+                                                style={{
+                                                    fontSize: "11px",
+                                                    opacity: 0.8,
+                                                    marginTop: "6px",
+                                                    textAlign: "right",
+                                                }}
+                                            >
+                                                {formatTime(msg.createdAt)}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

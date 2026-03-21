@@ -10,6 +10,10 @@ const commentSchema = new mongoose.Schema(
             type: String,
             default: "",
         },
+        profilePic: {
+            type: String,
+            default: "",
+        },
         text: {
             type: String,
             default: "",
@@ -18,6 +22,7 @@ const commentSchema = new mongoose.Schema(
             type: Date,
             default: Date.now,
         },
+
     },
     { _id: true }
 );

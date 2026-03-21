@@ -117,7 +117,7 @@ const GroupsPage = () => {
                                 <button
                                     onClick={handleCreateGroup}
                                     disabled={creating}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition disabled:opacity-50"
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition disabled:opacity-50 cursor-pointer"
                                 >
                                     {creating ? "กำลังสร้าง..." : "สร้างกลุ่ม"}
                                 </button>
@@ -213,7 +213,7 @@ const GroupsPage = () => {
 
                                                     <button
                                                         onClick={() => handleDeleteGroup(group._id)}
-                                                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl transition font-medium"
+                                                        className="bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl transition font-medium cursor-pointer"
                                                     >
                                                         ลบ
                                                     </button>

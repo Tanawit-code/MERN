@@ -557,7 +557,7 @@ const GroupDetailPage = () => {
                                     <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                                         <button
                                             onClick={() => handleLikePost(post._id)}
-                                            className={`hover:text-blue-600 ${isLiked ? "text-blue-600 font-semibold cursor-pointer" : ""
+                                            className={`hover:text-blue-600 cursor-pointer ${isLiked ? "text-blue-600 font-semibold cursor-pointer" : ""
                                                 }`}
                                         >
                                             👍 ถูกใจ {post.likes?.length || 0}
@@ -597,39 +597,53 @@ const GroupDetailPage = () => {
                                             return (
                                                 <div
                                                     key={comment._id}
-                                                    className="bg-gray-100 rounded-xl px-3 py-2 relative"
+                                                    className="flex gap-2 items-start relative"
                                                 >
-                                                    {isCommentOwner && (
-                                                        <div className="absolute top-2 right-2">
-                                                            <button
-                                                                onClick={() =>
-                                                                    setOpenMenu(openMenu === comment._id ? null : comment._id)
-                                                                }
-                                                                className="text-gray-500 hover:text-black cursor-pointer"
-                                                            >
-                                                                ⋯
-                                                            </button>
+                                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
+                                                        {comment.profilePic ? (
+                                                            <img
+                                                                src={`${apiBase}/${comment.profilePic}`}
+                                                                alt="comment-profile"
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            comment.name?.charAt(0).toUpperCase() || "U"
+                                                        )}
+                                                    </div>
 
-                                                            {openMenu === comment._id && (
-                                                                <div className="absolute right-0 mt-1 bg-white border rounded shadow">
-                                                                    <button
-                                                                        onClick={() => handleDeleteComment(post._id, comment._id)}
-                                                                        className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left text-xs cursor-pointer"
-                                                                    >
-                                                                        ลบ Comment
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                    <div className="bg-gray-100 rounded-xl px-3 py-2 relative flex-1">
+                                                        {isCommentOwner && (
+                                                            <div className="absolute top-2 right-2">
+                                                                <button
+                                                                    onClick={() =>
+                                                                        setOpenMenu(openMenu === comment._id ? null : comment._id)
+                                                                    }
+                                                                    className="text-gray-500 hover:text-black cursor-pointer"
+                                                                >
+                                                                    ⋯
+                                                                </button>
 
-                                                    <p className="font-semibold text-sm">{comment.name}</p>
-                                                    <p className="text-sm text-gray-700">{comment.text}</p>
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        {comment.createdAt
-                                                            ? new Date(comment.createdAt).toLocaleString()
-                                                            : ""}
-                                                    </p>
+                                                                {openMenu === comment._id && (
+                                                                    <div className="absolute right-0 mt-1 bg-white border rounded shadow z-10">
+                                                                        <button
+                                                                            onClick={() => handleDeleteComment(post._id, comment._id)}
+                                                                            className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left text-xs cursor-pointer"
+                                                                        >
+                                                                            ลบ Comment
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        <p className="font-semibold text-sm">{comment.name}</p>
+                                                        <p className="text-sm text-gray-700">{comment.text}</p>
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                            {comment.createdAt
+                                                                ? new Date(comment.createdAt).toLocaleString()
+                                                                : ""}
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
