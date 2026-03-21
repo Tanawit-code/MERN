@@ -331,7 +331,7 @@ const Home = () => {
             </div>
 
             <div className="mt-3 flex items-center gap-3 flex-wrap">
-              <label className="cursor-pointer text-blue-500 text-sm inline-block">
+              <label className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer">
                 📷 เพิ่มรูป
                 <input
                   type="file"
@@ -341,7 +341,7 @@ const Home = () => {
                 />
               </label>
 
-              <label className="cursor-pointer text-purple-500 text-sm inline-block">
+              <label className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer">
                 🎥 เพิ่มวิดีโอ
                 <input
                   type="file"
@@ -354,7 +354,7 @@ const Home = () => {
               <button
                 onClick={handlePost}
                 disabled={loadingPost}
-                className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
+                className="bg-blue-800 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
               >
                 {loadingPost ? "กำลังโพสต์..." : "โพสต์"}
               </button>
