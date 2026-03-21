@@ -2,6 +2,8 @@ import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 
+// เป็นเมนูด้านบนที่ใช้ร่วมกันหลายหน้า เช่นลิงก์ไป Home, profile, friends, groups, logout
+
 const Navbar = () => {
     const { userData, logout } = useContext(AppContext);
     const location = useLocation();

@@ -8,6 +8,16 @@ import {
     sendMessageApi,
 } from "../services/chatApi";
 
+// เป็นหน้าห้องแชต
+
+// โหลดข้อมูลห้องสนทนา
+// โหลดข้อความ
+// ส่งข้อความ
+// ส่งรูป/วิดีโอในแชต
+// แสดงชื่อและข้อมูลของคนที่คุยด้วย
+
+// เป็นหน้าหลักของระบบแชตส่วนตัว
+
 function ChatPage() {
     const { conversationId } = useParams();
     const { userData } = useContext(AppContext);

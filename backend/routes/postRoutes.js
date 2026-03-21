@@ -1,3 +1,13 @@
+// กำหนด route สำหรับโพสต์:
+// GET / all
+// POST / create
+// POST / like /: id
+// POST / comment /: id
+// DELETE / comment /: postId /: commentId
+// DELETE /: postId
+
+// route ที่แก้ข้อมูลใช้ authMiddleware เพื่อบังคับให้ต้อง login ก่อน
+
 import express from "express";
 import {
     createPost,

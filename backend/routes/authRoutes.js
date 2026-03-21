@@ -1,3 +1,5 @@
+// ใช้ map endpoint ฝั่ง auth ไปยัง authController เช่น login, register, verify-email, logout, getMe
+
 import express from "express";
 import {
   register,

@@ -1,3 +1,18 @@
+// router หลักของ frontend
+// มีหน้าหลัก ๆ เช่น:
+
+// / → Home
+// /login
+// /search
+// /friend-requests
+// /friends
+// /chat/:conversationId
+// /profilepage
+// /groups
+// /groups/:groupId
+
+// สรุปคือเป็นไฟล์กำหนดว่า URL ไหนจะเปิดหน้าอะไร
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

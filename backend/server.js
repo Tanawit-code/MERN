@@ -1,3 +1,12 @@
+// โหลด env ต่อฐานข้อมูล
+// เปิดใช้งาน middleware เช่น cors, express.json, cookieParser
+// เปิด static path /uploads
+// ผูก route หลัก:
+// /api/auth
+// /api/posts
+// /api/chat
+// /api/groups
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";

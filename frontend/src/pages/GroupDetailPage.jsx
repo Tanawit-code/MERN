@@ -9,6 +9,18 @@ import {
     getGroupPosts,
 } from "../services/groupApi";
 
+// เป็นหน้ารายละเอียดกลุ่ม มีหน้าที่:
+// โหลดข้อมูลกลุ่ม
+// โหลดโพสต์ของกลุ่ม
+// เข้าร่วม/ออกจากกลุ่ม
+// สร้างโพสต์ในกลุ่ม
+// ลบโพสต์
+// ไลก์โพสต์
+// คอมเมนต์
+// ลบคอมเมนต์
+
+// หน้า nàyเหมือน feed เฉพาะของแต่ละกลุ่ม และมีเงื่อนไขเรื่องสมาชิก เช่น ต้องเข้ากลุ่มก่อนถึงจะโพสต์ได้
+
 const GroupDetailPage = () => {
     const { groupId } = useParams();
     const { userData, isLoggedIn, isLoading } = useContext(AppContext);

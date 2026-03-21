@@ -1,3 +1,14 @@
+// กำหนด route สำหรับกลุ่ม:
+// GET /
+// GET /:groupId
+// GET /:groupId/posts
+// POST /
+// POST /:groupId/join
+// POST /:groupId/leave
+// DELETE /:groupId
+
+// เป็นตัวเชื่อม frontend เข้ากับ groupController
+
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 import {

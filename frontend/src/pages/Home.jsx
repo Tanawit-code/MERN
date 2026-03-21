@@ -3,6 +3,16 @@ import { useNavigate, Link } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
 
+// หน้า feed หลักของระบบ ทำหน้าที่:
+// โหลดโพสต์ทั้งหมดจาก /api/posts/all
+// สร้างโพสต์ใหม่
+// อัปโหลดรูป/วิดีโอ
+// ไลก์โพสต์
+// คอมเมนต์
+// ลบโพสต์
+// ลบคอมเมนต์
+// แสดงข้อมูล user ที่ล็อกอิน
+
 const Home = () => {
   const navigate = useNavigate();
   const { isLoggedIn, userData, logout, isLoading } = useContext(AppContext);

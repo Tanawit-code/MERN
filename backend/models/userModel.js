@@ -1,3 +1,10 @@
+// เก็บ schema ของผู้ใช้ เช่น: name email password isVerified
+// token สำหรับ verify email / reset password
+// profilePic
+// video
+
+// ไฟล์นี้คือโครงสร้างข้อมูล user ใน MongoDB
+
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(

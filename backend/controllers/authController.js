@@ -1,3 +1,15 @@
+// ควบคุมทุกอย่างที่เกี่ยวกับบัญชีผู้ใช้ เช่น:
+// สมัครสมาชิก register
+// ยืนยันอีเมล verifyEmail
+// ส่งเมลยืนยันใหม่
+// ล็อกอิน login
+// ล็อกเอาต์ logout
+// ดึงข้อมูลตัวเอง getMe
+// อัปเดตโปรไฟล์ updateProfile
+// ลืมรหัสผ่าน / รีเซ็ตรหัสผ่าน
+
+// เวลาล็อกอินสำเร็จ controller นี้จะสร้าง JWT แล้ว set cookie ชื่อ token เพื่อให้ middleware ใช้ตรวจสอบ session ต่อได้
+
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";

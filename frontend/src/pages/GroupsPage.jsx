@@ -3,6 +3,14 @@ import { Link } from "react-router-dom";
 import { getGroups, createGroup, deleteGroup } from "../services/groupApi";
 import Navbar from "../components/Navbar";
 
+// เป็นหน้ารวมกลุ่ม มีหน้าที่:
+// โหลดรายการกลุ่มทั้งหมด
+// สร้างกลุ่ม
+// ลบกลุ่ม
+// ไปหน้ารายละเอียดกลุ่ม
+
+// เป็นหน้า list ของกลุ่มทั้งหมดในระบบ
+
 const GroupsPage = () => {
     const [groups, setGroups] = useState([]);
     const [name, setName] = useState("");

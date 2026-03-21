@@ -1,3 +1,9 @@
+// รวมฟังก์ชันเรียก API แชตและเพื่อน เช่น:
+// หาเพื่อน
+// ส่งคำขอเป็นเพื่อน
+// ดึงรายการเพื่อน
+// สร้าง private conversation
+
 import axios from "axios";
 
 const API = axios.create({

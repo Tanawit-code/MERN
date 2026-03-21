@@ -1,3 +1,14 @@
+// รวมฟังก์ชันเรียก API กลุ่ม เช่น:
+// getGroups
+// getGroupById
+// createGroup
+// deleteGroup
+// joinGroup
+// leaveGroup
+// getGroupPosts
+
+// ไฟล์นี้ทำให้หน้า frontend ไม่ต้องเขียน fetch(...) ซ้ำเยอะ ๆ
+
 const API_URL = "http://localhost:5000/api/groups";
 
 export const getGroups = async () => {

@@ -1,3 +1,5 @@
+// ใช้ route ของระบบแชต เช่น หาเพื่อน, สร้างห้อง private, โหลดข้อความ, ส่งข้อความ
+
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
 

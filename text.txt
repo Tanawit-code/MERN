@@ -1,5 +1,13 @@
-Tanawit_db
-gmKz1x5NAuYVEDhI
+Backend
+รับ request, ตรวจสิทธิ์, คุยกับ MongoDB, แล้วส่ง JSON กลับ
+
+Frontend
+รับ JSON จาก backend แล้วเอามาแสดงเป็นหน้า:
+feed
+groups
+chat
+friends
+profile
 
 
 git add .

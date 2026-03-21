@@ -6,6 +6,9 @@ import {
 } from "../services/chatApi";
 import { useNavigate } from "react-router-dom";
 
+// ใช้แสดงรายชื่อเพื่อนของ user และมีปุ่มเริ่มแชต
+// ตอนกดปุ่มแชตจะเรียก API สร้างหรือเข้าห้องแชตส่วนตัว แล้ว navigate ไปที่ /chat/:conversationId
+
 function FriendsList() {
     const [friends, setFriends] = useState([]);
     const navigate = useNavigate();

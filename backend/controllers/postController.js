@@ -1,3 +1,18 @@
+// ไฟล์นี้ดูแลระบบโพสต์ทั้งหมด เช่น:
+
+// createPost สร้างโพสต์
+// getPosts ดึงโพสต์หน้า Home
+// toggleLike ไลก์ / ยกเลิกไลก์
+// addComment เพิ่มคอมเมนต์
+// deleteComment ลบคอมเมนต์
+// deletePost ลบโพสต์
+
+// จุดสำคัญของไฟล์นี้ในโปรเจกต์คุณ:
+
+// หน้า Home ดึงเฉพาะโพสต์ที่ groupId: null
+// ถ้าเป็นโพสต์ในกลุ่ม createPost จะเช็กก่อนว่า user เป็นสมาชิกกลุ่มหรือไม่
+// การลบโพสต์เช็กว่าเป็นเจ้าของโพสต์จริงหรือไม่
+
 import Post from "../models/Post.js";
 import Group from "../models/Group.js";
 import userModel from "../models/userModel.js";

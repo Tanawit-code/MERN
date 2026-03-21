@@ -1,3 +1,15 @@
+// คุมระบบกลุ่ม เช่น:
+// createGroup
+// deleteGroup
+// joinGroup
+// leaveGroup
+// getGroups
+// getGroupById
+// getGroupPosts
+
+// สรุปคือเป็น controller หลักของระบบ group ทั้งหมด
+// โดย getGroupPosts ใช้ดึงโพสต์เฉพาะของกลุ่มนั้นจาก Post.find({ groupId: group._id })
+
 import mongoose from "mongoose";
 import Group from "../models/Group.js";
 import Post from "../models/Post.js";

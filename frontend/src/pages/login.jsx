@@ -4,6 +4,9 @@ import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+// ใช้ล็อกอินเข้าสู่ระบบ โดยส่งข้อมูลไปที่ /api/auth/login
+// ถ้าสำเร็จ backend จะ set cookie ให้
+
 const Login = () => {
   const navigate = useNavigate();
   const { BackendUrl, setIsLoggedIn, getUserData } = useContext(AppContext);

@@ -1,3 +1,9 @@
+
+// เก็บ schema ของโพสต์และคอมเมนต์ โดยในโปรเจกต์นี้มี: userId content image video groupId likes comments
+
+// ใน commentSchema ตอนนี้มี: userId name profilePic text createdAt
+
+
 import mongoose from "mongoose";
 
 const commentSchema = new mongoose.Schema(

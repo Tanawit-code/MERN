@@ -1,3 +1,12 @@
+// เก็บข้อมูลกลุ่ม เช่น:
+// name
+// description
+// coverImage
+// owner
+// members
+
+// เจ้าของกลุ่มเก็บใน owner และสมาชิกเก็บใน members
+
 import mongoose from "mongoose";
 
 const groupSchema = new mongoose.Schema(

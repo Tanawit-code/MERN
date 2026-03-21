@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 import Navbar from "../components/Navbar";
 import { AppContext } from "../context/AppContext";
 
+// ใช้แสดงและแก้ไขข้อมูลโปรไฟล์ของผู้ใช้ เช่นชื่อ อีเมล รูปโปรไฟล์
+
 const ProfilePage = () => {
     const { BackendUrl, userData, setUserData, isLoading } = useContext(AppContext);
 
