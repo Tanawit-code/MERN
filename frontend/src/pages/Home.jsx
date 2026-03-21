@@ -67,6 +67,7 @@ const Home = () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           userId: userData._id,
           name: userData.name,
@@ -96,12 +97,7 @@ const Home = () => {
     try {
       const res = await fetch(`http://localhost:5000/api/posts/${postId}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: userData._id,
-        }),
+        credentials: "include",
       });
 
       const data = await res.json();
@@ -120,12 +116,7 @@ const Home = () => {
     try {
       const res = await fetch(`http://localhost:5000/api/posts/like/${postId}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: userData._id,
-        }),
+        credentials: "include",
       });
 
       const data = await res.json();
@@ -148,12 +139,11 @@ const Home = () => {
         `http://localhost:5000/api/posts/comment/${postId}`,
         {
           method: "POST",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId: userData._id,
-            name: userData.name,
             text,
           }),
         }
@@ -176,6 +166,7 @@ const Home = () => {
         `http://localhost:5000/api/posts/comment/${postId}/${commentId}`,
         {
           method: "DELETE",
+          credentials: "include",
         }
       );
 
@@ -221,6 +212,36 @@ const Home = () => {
       setVideoPreview(reader.result);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCreateGroupPost = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/posts/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          content,
+          image,
+          video,
+          groupId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("โพสต์สำเร็จ");
+        fetchPostsInGroup();
+        setPostText("");
+      } else {
+        alert(data.message || "โพสต์ไม่สำเร็จ");
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (isLoading) {
@@ -365,7 +386,7 @@ const Home = () => {
                 <img
                   src={preview}
                   alt="preview"
-                  className="rounded-xl max-h-60 object-cover border"
+                  className="rounded-xl max-h-100 object-cover border"
                 />
 
                 <button
@@ -385,7 +406,7 @@ const Home = () => {
                 <video
                   src={videoPreview}
                   controls
-                  className="rounded-xl max-h-60 object-cover border"
+                  className="rounded-xl max-h-100 object-cover border"
                 />
 
                 <button
@@ -404,13 +425,13 @@ const Home = () => {
           {posts.map((post) => (
             <div key={post._id} className="bg-white p-4 rounded-xl shadow mb-4">
               <div className="relative">
-                {post.userId === userData._id && (
+                {(post.userId?._id === userData?._id || post.userId === userData?._id) && (
                   <div className="absolute top-0 right-0">
                     <button
                       onClick={() =>
                         setOpenMenu(openMenu === post._id ? null : post._id)
                       }
-                      className="text-gray-500 hover:text-black"
+                      className="text-gray-500 hover:text-black cursor-pointer"
                     >
                       ⋯
                     </button>
@@ -419,7 +440,7 @@ const Home = () => {
                       <div className="absolute right-0 mt-1 bg-white border rounded shadow">
                         <button
                           onClick={() => handleDeletePost(post._id)}
-                          className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left"
+                          className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left cursor-pointer"
                         >
                           ลบโพสต์
                         </button>
@@ -466,21 +487,19 @@ const Home = () => {
                   className="mt-3 w-full max-h-[400px] max-w-[500px] object-cover rounded-xl border"
                 />
               )}
-
+              <div className="mt-3 flex gap-2 mt-3 border-t pt-3"></div>
               <button
                 onClick={() => handleLike(post._id)}
-                className={`mt-2 transition duration-200 cursor-pointer ${post.likes?.includes(userData._id)
-                  ? "text-lg font-bold text-blue-500"
-                  : "text-gray-500"
+                className={`hover:text-blue-600 ${post.likes?.includes(userData._id) ? "text-blue-600 font-semibold cursor-pointer" : ""
                   }`}
               >
-                👍 {post.likes?.length || 0}
+                👍 ถูกใจ {post.likes?.length || 0}
               </button>
-
-              <div className="mt-3 flex gap-2">
+              <span> 💬 ความคิดเห็น {post.comments?.length || 0}</span>
+              <div className="mt-3 flex gap-2 ">
                 <input
                   type="text"
-                  placeholder="เขียนคอมเมนต์..."
+                  placeholder="เขียนความคิดเห็น..."
                   value={commentText[post._id] || ""}
                   onChange={(e) =>
                     setCommentText({
@@ -494,7 +513,7 @@ const Home = () => {
 
                 <button
                   onClick={() => handleComment(post._id)}
-                  className="bg-blue-500 text-white px-3 rounded"
+                  className="bg-blue-500 text-white px-3 rounded cursor-pointer"
                 >
                   ส่ง
                 </button>
@@ -526,7 +545,7 @@ const Home = () => {
                               onClick={() =>
                                 setOpenMenu(openMenu === c._id ? null : c._id)
                               }
-                              className="text-gray-500 hover:text-black"
+                              className="text-gray-500 hover:text-black cursor-pointer"
                             >
                               ⋯
                             </button>
@@ -537,7 +556,7 @@ const Home = () => {
                                   onClick={() =>
                                     handleDeleteComment(post._id, c._id)
                                   }
-                                  className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left text-xs"
+                                  className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left text-xs cursor-pointer"
                                 >
                                   ลบ Comment
                                 </button>

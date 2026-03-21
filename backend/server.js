@@ -9,6 +9,8 @@ import authRoutes from "./routes/authRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import chatRouter from "./routes/chatRoute.js";
 
+import groupRoutes from "./routes/groupRoutes.js";
+
 dotenv.config();
 connectDB();
 
@@ -42,6 +44,7 @@ app.use("/uploads", express.static("uploads"));
 app.use("/api/posts", postRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRouter);
+app.use("/api/groups", groupRoutes);
 
 app.get("/", (req, res) => {
   res.send("API Running welcome to backend");

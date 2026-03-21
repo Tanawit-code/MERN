@@ -37,6 +37,11 @@ const postSchema = new mongoose.Schema(
             type: String,
             default: "",
         },
+        groupId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Group",
+            default: null,
+        },
         video: {
             type: String,
             default: "",

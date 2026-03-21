@@ -32,6 +32,7 @@ const Navbar = () => {
                 <Link to="/search" style={linkStyle("/search")}>ค้นหา</Link>
                 <Link to="/friend-requests" style={linkStyle("/friend-requests")}>คำขอเพื่อน</Link>
                 <Link to="/friends" style={linkStyle("/friends")}>เพื่อน</Link>
+                <Link to="/groups" style={linkStyle("/group ")}>กลุ่ม</Link>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
