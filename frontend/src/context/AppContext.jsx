@@ -2,6 +2,14 @@ import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
+// เป็นที่เก็บ state กลางของแอป เช่น:
+// isLoggedIn
+// userData
+// isLoading
+// ฟังก์ชัน logout
+
+// ทำให้หลายหน้าเข้าถึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ได้โดยไม่ต้องส่ง props ต่อกันยาว ๆ
+
 export const AppContext = createContext();
 
 const AppContextProvider = ({ children }) => {
