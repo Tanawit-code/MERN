@@ -7,6 +7,62 @@ const makePairKey = (userA, userB) => {
     return [String(userA), String(userB)].sort().join("_");
 };
 
+const syncFollowBothWays = async (userAId, userBId) => {
+    const [userA, userB] = await Promise.all([
+        userModel.findById(userAId),
+        userModel.findById(userBId),
+    ]);
+
+    if (!userA || !userB) return;
+
+    const aFollowingB = userA.following.some(
+        (id) => id.toString() === userB._id.toString()
+    );
+    const bFollowingA = userB.following.some(
+        (id) => id.toString() === userA._id.toString()
+    );
+
+    if (!aFollowingB) userA.following.push(userB._id);
+    if (!bFollowingA) userB.following.push(userA._id);
+
+    const aInFollowers = userA.followers.some(
+        (id) => id.toString() === userB._id.toString()
+    );
+    const bInFollowers = userB.followers.some(
+        (id) => id.toString() === userA._id.toString()
+    );
+
+    if (!aInFollowers) userA.followers.push(userB._id);
+    if (!bInFollowers) userB.followers.push(userA._id);
+
+    await Promise.all([userA.save(), userB.save()]);
+};
+
+const unsyncFollowBothWays = async (userAId, userBId) => {
+    const [userA, userB] = await Promise.all([
+        userModel.findById(userAId),
+        userModel.findById(userBId),
+    ]);
+
+    if (!userA || !userB) return;
+
+    userA.following = userA.following.filter(
+        (id) => id.toString() !== userB._id.toString()
+    );
+    userA.followers = userA.followers.filter(
+        (id) => id.toString() !== userB._id.toString()
+    );
+
+    userB.following = userB.following.filter(
+        (id) => id.toString() !== userA._id.toString()
+    );
+    userB.followers = userB.followers.filter(
+        (id) => id.toString() !== userA._id.toString()
+    );
+
+    await Promise.all([userA.save(), userB.save()]);
+};
+
 // ค้นหาผู้ใช้สำหรับเพิ่มเพื่อน
 export const searchUsers = async (req, res) => {
     try {
@@ -250,6 +306,9 @@ export const acceptFriendRequest = async (req, res) => {
         request.status = "accepted";
         await request.save();
 
+        // ✅ เชื่อมระบบ follow ให้ติดตามกันอัตโนมัติ
+        await syncFollowBothWays(request.sender, request.receiver);
+
         return res.status(200).json({
             success: true,
             message: "รับคำขอเป็นเพื่อนสำเร็จ",
@@ -407,6 +466,13 @@ export const unfriend = async (req, res) => {
             });
         }
 
+        if (!mongoose.Types.ObjectId.isValid(friendId)) {
+            return res.status(400).json({
+                success: false,
+                message: "friendId ไม่ถูกต้อง",
+            });
+        }
+
         const pairKey = makePairKey(userId, friendId);
         const deleted = await friendshipModel.findOneAndDelete({ pairKey });
 
@@ -416,6 +482,9 @@ export const unfriend = async (req, res) => {
                 message: "ไม่พบความเป็นเพื่อนนี้",
             });
         }
+
+        // ✅ เลิกติดตามกันอัตโนมัติเมื่อเลิกเป็นเพื่อน
+        await unsyncFollowBothWays(userId, friendId);
 
         return res.status(200).json({
             success: true,
@@ -429,6 +498,8 @@ export const unfriend = async (req, res) => {
         });
     }
 };
+
+
 export const getSuggestions = async (req, res) => {
     try {
         const userId = req.userId;

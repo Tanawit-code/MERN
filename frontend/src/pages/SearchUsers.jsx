@@ -1,13 +1,5 @@
-// ใช้ค้นหาผู้ใช้คนอื่น
-
-// ค้นหาจากชื่อ/อีเมล
-// ส่งคำขอเป็นเพื่อน
-// เช็กว่าเคยส่งคำขอแล้วหรือยัง
-// เช็กว่าเป็นเพื่อนกันอยู่แล้วหรือยัง
-
-// หน้า nàyเป็นระบบค้นหาและเพิ่มเพื่อน
-
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import {
     searchUsersApi,
@@ -15,6 +7,22 @@ import {
     getSentFriendRequestsApi,
     getFriendsApi,
 } from "../services/chatApi";
+
+const API_BASE = "http://localhost:5000";
+
+const getImageUrl = (path) => {
+    if (!path) return "";
+
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+        return path;
+    }
+
+    if (path.startsWith("/uploads")) {
+        return `${API_BASE}${path}`;
+    }
+
+    return `${API_BASE}/uploads/${path}`;
+};
 
 function SearchUsers() {
     const [keyword, setKeyword] = useState("");
@@ -236,48 +244,73 @@ function SearchUsers() {
                                 </div>
                             </div>
 
-                            {friendMap[user._id] ? (
-                                <button
-                                    disabled
+                            <div
+                                style={{
+                                    display: "flex",
+                                    gap: "8px",
+                                    alignItems: "center",
+                                    flexWrap: "wrap",
+                                    justifyContent: "flex-end",
+                                }}
+                            >
+                                <Link
+                                    to={`/profile/${user._id}`}
                                     style={{
                                         padding: "8px 14px",
                                         borderRadius: "8px",
-                                        border: "none",
-                                        background: "#16a34a",
-                                        color: "#fff",
+                                        border: "1px solid #d1d5db",
+                                        background: "#fff",
+                                        color: "#111827",
+                                        textDecoration: "none",
+                                        display: "inline-block",
                                     }}
                                 >
-                                    เป็นเพื่อนแล้ว
-                                </button>
-                            ) : sentRequests[user._id] ? (
-                                <button
-                                    disabled
-                                    style={{
-                                        padding: "8px 14px",
-                                        borderRadius: "8px",
-                                        border: "none",
-                                        background: "#9ca3af",
-                                        color: "#fff",
-                                    }}
-                                >
-                                    ส่งคำขอแล้ว
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => handleAddFriend(user._id)}
-                                    disabled={sendingId === user._id}
-                                    style={{
-                                        padding: "8px 14px",
-                                        borderRadius: "8px",
-                                        border: "none",
-                                        background: "#2563eb",
-                                        color: "#fff",
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    {sendingId === user._id ? "กำลังส่ง..." : "เพิ่มเพื่อน"}
-                                </button>
-                            )}
+                                    ดูโปรไฟล์
+                                </Link>
+
+                                {friendMap[user._id] ? (
+                                    <button
+                                        disabled
+                                        style={{
+                                            padding: "8px 14px",
+                                            borderRadius: "8px",
+                                            border: "none",
+                                            background: "#16a34a",
+                                            color: "#fff",
+                                        }}
+                                    >
+                                        เป็นเพื่อนแล้ว
+                                    </button>
+                                ) : sentRequests[user._id] ? (
+                                    <button
+                                        disabled
+                                        style={{
+                                            padding: "8px 14px",
+                                            borderRadius: "8px",
+                                            border: "none",
+                                            background: "#9ca3af",
+                                            color: "#fff",
+                                        }}
+                                    >
+                                        ส่งคำขอแล้ว
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => handleAddFriend(user._id)}
+                                        disabled={sendingId === user._id}
+                                        style={{
+                                            padding: "8px 14px",
+                                            borderRadius: "8px",
+                                            border: "none",
+                                            background: "#2563eb",
+                                            color: "#fff",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        {sendingId === user._id ? "กำลังส่ง..." : "เพิ่มเพื่อน"}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

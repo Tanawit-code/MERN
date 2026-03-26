@@ -60,6 +60,7 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route path="/profilepage" element={<ProfilePage />} />
+        <Route path="/profile/:userId" element={<ProfilePage />} />
 
         <Route path="/groups" element={<GroupsPage />} />
         <Route path="/groups/:groupId" element={<GroupDetailPage />} />

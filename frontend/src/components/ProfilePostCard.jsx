@@ -1,5 +1,16 @@
 import React from "react";
 
+const API_BASE = "http://localhost:5000";
+
+const getImageUrl = (path) => {
+    if (!path) return "https://via.placeholder.com/40";
+
+    if (path.startsWith("http")) return path;
+    if (path.startsWith("/uploads")) return `${API_BASE}${path}`;
+
+    return `${API_BASE}/uploads/${path}`;
+};
+
 const ProfilePostCard = ({
     post,
     userData,
@@ -16,7 +27,7 @@ const ProfilePostCard = ({
                 <div className="flex gap-3 items-center">
                     {post.userId?.profilePic ? (
                         <img
-                            src={post.userId.profilePic}
+                            src={`http://localhost:5000/${post.userId?.profilePic}`}
                             alt={post.userId?.name}
                             className="w-12 h-12 rounded-full object-cover border"
                         />
@@ -71,7 +82,7 @@ const ProfilePostCard = ({
             <div className="mt-4 flex items-center gap-6 text-sm text-gray-600 border-t pt-3">
                 <button
                     onClick={() => handleLike(post._id)}
-                    className={`hover:text-blue-600 ${post.likes?.includes(userData?._id) ? "text-blue-600 font-semibold" : ""
+                    className={`hover:text-blue-600 cursor-pointer ${post.likes?.includes(userData?._id) ? "text-blue-600 font-semibold cursor-pointer  " : ""
                         }`}
                 >
                     ถูกใจ {post.likes?.length || 0}
@@ -111,7 +122,7 @@ const ProfilePostCard = ({
                                 <div className="flex gap-3">
                                     {c.profilePic ? (
                                         <img
-                                            src={c.profilePic}
+                                            src={`http://localhost:5000/${c.profilePic}`}
                                             alt={c.name}
                                             className="w-9 h-9 rounded-full object-cover border"
                                         />

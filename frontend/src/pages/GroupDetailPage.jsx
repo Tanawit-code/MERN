@@ -31,6 +31,58 @@ const GroupDetailPage = () => {
 
     const apiBase = "http://localhost:5000";
 
+    const getImageUrl = (path) => {
+        if (!path) return "";
+
+        if (path.startsWith("http://") || path.startsWith("https://")) return path;
+        if (path.startsWith("data:image") || path.startsWith("data:video")) return path;
+        if (path.startsWith("/uploads")) return `${apiBase}${path}`;
+
+        return `${apiBase}/uploads/${path}`;
+    };
+
+    const getPostAuthor = (post) => {
+        const userObj =
+            typeof post.userId === "object" && post.userId !== null
+                ? post.userId
+                : post.user || post.author || null;
+
+        return {
+            id: userObj?._id || userObj?.id || post.userId || "",
+            name:
+                userObj?.name ||
+                userObj?.fullname ||
+                post.name ||
+                post.fullname ||
+                "Unknown User",
+            profilePic:
+                userObj?.profilePic ||
+                userObj?.avatar ||
+                post.profilePic ||
+                "",
+        };
+    };
+
+    const getCommentAuthor = (comment) => {
+        return {
+            id:
+                comment.userId?._id ||
+                comment.userId?.id ||
+                comment.userId ||
+                "",
+            name:
+                comment.userId?.name ||
+                comment.userId?.fullname ||
+                comment.name ||
+                comment.fullname ||
+                "Unknown User",
+            profilePic:
+                comment.userId?.profilePic ||
+                comment.profilePic ||
+                "",
+        };
+    };
+
     const fetchGroup = async () => {
         try {
             const data = await getGroupById(groupId);
@@ -235,7 +287,6 @@ const GroupDetailPage = () => {
 
     const handleAddComment = async (postId) => {
         const text = commentInputs[postId];
-
         if (!text || !text.trim()) return;
 
         try {
@@ -303,12 +354,9 @@ const GroupDetailPage = () => {
 
     const renderProfileImage = (user, fallback = "U") => {
         if (user?.profilePic) {
-            const src = user.profilePic.startsWith("http")
-                ? user.profilePic
-                : `${apiBase}/${user.profilePic}`;
             return (
                 <img
-                    src={src}
+                    src={getImageUrl(user.profilePic)}
                     alt="profile"
                     className="w-full h-full object-cover"
                 />
@@ -390,9 +438,9 @@ const GroupDetailPage = () => {
                                 {group.groupImage ? (
                                     <>
                                         <img
-                                            src={`${apiBase}${group.groupImage}`}
-                                            alt={group.name}
-                                            className="w-full h-full object-cover"
+                                            src={preview}
+                                            alt="preview"
+                                            className="rounded-xl max-h-60 object-cover border"
                                         />
                                         <div className="absolute inset-0 bg-black/25" />
                                     </>
@@ -446,8 +494,6 @@ const GroupDetailPage = () => {
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-
-
                                     {isMember ? (
                                         !isGroupOwner && (
                                             <button
@@ -519,7 +565,7 @@ const GroupDetailPage = () => {
                                 {preview && (
                                     <div className="mt-3">
                                         <img
-                                            src={preview}
+                                            src={`http://localhost:5000${group.groupImage}`}
                                             alt="preview"
                                             className="rounded-xl max-h-60 object-cover border"
                                         />
@@ -563,6 +609,8 @@ const GroupDetailPage = () => {
                         )}
 
                         {posts.map((post) => {
+                            const author = getPostAuthor(post);
+
                             const isLiked = post.likes?.some(
                                 (id) =>
                                     id === userData?._id ||
@@ -571,7 +619,7 @@ const GroupDetailPage = () => {
                             );
 
                             const isOwner =
-                                post.userId?._id === userData?._id ||
+                                author.id === userData?._id ||
                                 post.userId === userData?._id;
 
                             return (
@@ -607,15 +655,33 @@ const GroupDetailPage = () => {
 
                                     <div className="flex items-center gap-3 mb-2">
                                         <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
-                                            {typeof post.userId === "object"
-                                                ? renderProfileImage(post.userId, "U")
-                                                : post.name?.charAt(0).toUpperCase() || "U"}
+                                            <Link
+                                                to={`/profile/${author.id}`}
+                                                className="flex items-center gap-3 mb-2 hover:opacity-80"
+                                            >
+                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
+                                                    {author.profilePic ? (
+                                                        <img
+                                                            src={getImageUrl(author.profilePic)}
+                                                            alt={author.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        author.name?.charAt(0).toUpperCase() || "U"
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <p className="font-semibold">{author.name}</p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {new Date(post.createdAt).toLocaleString()}
+                                                    </p>
+                                                </div>
+                                            </Link>
                                         </div>
 
                                         <div>
-                                            <p className="font-semibold">
-                                                {post.userId?.name || post.name || "Unknown User"}
-                                            </p>
+                                            <p className="font-semibold">{author.name}</p>
                                             <p className="text-xs text-gray-400">
                                                 {new Date(post.createdAt).toLocaleString()}
                                             </p>
@@ -630,7 +696,7 @@ const GroupDetailPage = () => {
 
                                     {post.image && (
                                         <img
-                                            src={post.image}
+                                            src={getImageUrl(post.image)}
                                             alt="post"
                                             className="rounded-xl max-h-100 object-cover border"
                                         />
@@ -683,7 +749,10 @@ const GroupDetailPage = () => {
 
                                         <div className="space-y-2">
                                             {post.comments?.map((comment) => {
+                                                const commentAuthor = getCommentAuthor(comment);
+
                                                 const isCommentOwner =
+                                                    commentAuthor.id === userData?._id ||
                                                     comment.userId === userData?._id;
 
                                                 return (
@@ -692,14 +761,14 @@ const GroupDetailPage = () => {
                                                         className="flex gap-2 items-start relative"
                                                     >
                                                         <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                                                            {comment.profilePic ? (
+                                                            {commentAuthor.profilePic ? (
                                                                 <img
-                                                                    src={`${apiBase}/${comment.profilePic}`}
-                                                                    alt="comment-profile"
+                                                                    src={getImageUrl(commentAuthor.profilePic)}
+                                                                    alt={commentAuthor.name}
                                                                     className="w-full h-full object-cover"
                                                                 />
                                                             ) : (
-                                                                comment.name?.charAt(0).toUpperCase() || "U"
+                                                                commentAuthor.name?.charAt(0).toUpperCase() || "U"
                                                             )}
                                                         </div>
 
@@ -738,16 +807,14 @@ const GroupDetailPage = () => {
                                                             )}
 
                                                             <p className="font-semibold text-sm">
-                                                                {comment.name}
+                                                                {commentAuthor.name}
                                                             </p>
                                                             <p className="text-sm text-gray-700">
                                                                 {comment.text}
                                                             </p>
                                                             <p className="text-xs text-gray-400 mt-1">
                                                                 {comment.createdAt
-                                                                    ? new Date(
-                                                                        comment.createdAt
-                                                                    ).toLocaleString()
+                                                                    ? new Date(comment.createdAt).toLocaleString()
                                                                     : ""}
                                                             </p>
                                                         </div>
@@ -771,7 +838,6 @@ const GroupDetailPage = () => {
                             <p className="text-sm text-gray-600 mt-2">
                                 เจ้าของ: {group.owner?.name || "-"}
                             </p>
-
                         </div>
                     </div>
                 </div>

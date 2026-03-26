@@ -4,10 +4,23 @@ import {
     getFriendsApi,
     createPrivateConversationApi,
 } from "../services/chatApi";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
-// ใช้แสดงรายชื่อเพื่อนของ user และมีปุ่มเริ่มแชต
-// ตอนกดปุ่มแชตจะเรียก API สร้างหรือเข้าห้องแชตส่วนตัว แล้ว navigate ไปที่ /chat/:conversationId
+const API_BASE = "http://localhost:5000";
+
+const getImageUrl = (path) => {
+    if (!path) return "";
+
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+        return path;
+    }
+
+    if (path.startsWith("/uploads")) {
+        return `${API_BASE}${path}`;
+    }
+
+    return `${API_BASE}/uploads/${path}`;
+};
 
 function FriendsList() {
     const [friends, setFriends] = useState([]);
@@ -42,7 +55,7 @@ function FriendsList() {
             <div className="bg-gray-100 min-h-screen">
                 <div
                     style={{
-                        maxWidth: "600px",
+                        maxWidth: "700px",
                         margin: "20px auto",
                         padding: "0 20px",
                         paddingTop: "80px",
@@ -69,6 +82,7 @@ function FriendsList() {
                                     backgroundColor: "#fff",
                                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                                     transition: "transform 0.2s",
+                                    gap: "12px",
                                 }}
                                 onMouseEnter={(e) =>
                                     (e.currentTarget.style.transform = "scale(1.02)")
@@ -137,21 +151,46 @@ function FriendsList() {
                                     </div>
                                 </div>
 
-                                <button
-                                    onClick={() => handleStartChat(friend._id)}
+                                <div
                                     style={{
-                                        padding: "6px 14px",
-                                        borderRadius: "20px",
-                                        border: "none",
-                                        backgroundColor: "#2e6df5",
-                                        color: "#fff",
-                                        fontWeight: "bold",
-                                        cursor: "pointer",
-                                        fontSize: "13px",
+                                        display: "flex",
+                                        gap: "8px",
+                                        flexWrap: "wrap",
                                     }}
                                 >
-                                    แชท
-                                </button>
+                                    <Link
+                                        to={`/profile/${friend._id}`}
+                                        style={{
+                                            padding: "6px 14px",
+                                            borderRadius: "20px",
+                                            border: "1px solid #d1d5db",
+                                            backgroundColor: "#fff",
+                                            color: "#111827",
+                                            fontWeight: "bold",
+                                            textDecoration: "none",
+                                            fontSize: "13px",
+                                            display: "inline-block",
+                                        }}
+                                    >
+                                        ดูโปรไฟล์
+                                    </Link>
+
+                                    <button
+                                        onClick={() => handleStartChat(friend._id)}
+                                        style={{
+                                            padding: "6px 14px",
+                                            borderRadius: "20px",
+                                            border: "none",
+                                            backgroundColor: "#2e6df5",
+                                            color: "#fff",
+                                            fontWeight: "bold",
+                                            cursor: "pointer",
+                                            fontSize: "13px",
+                                        }}
+                                    >
+                                        แชท
+                                    </button>
+                                </div>
                             </div>
                         ))
                     )}

@@ -341,7 +341,7 @@ const Home = () => {
             <div className="flex items-center gap-3">
               {userData?.profilePic ? (
                 <img
-                  src={getImageUrl(userData.profilePic)}
+                  src={`http://localhost:5000/${userData.profilePic}`}
                   alt={userData?.name}
                   className="w-12 h-12 rounded-full object-cover border"
                 />
@@ -433,7 +433,7 @@ const Home = () => {
                   <Link to={`/profile/${post.userId?._id}`}>
                     {post.userId?.profilePic ? (
                       <img
-                        src={getImageUrl(post.userId.profilePic)}
+                        src={`http://localhost:5000/${post.userId?.profilePic}`}
                         alt={post.userId?.name}
                         className="w-12 h-12 rounded-full object-cover border"
                       />
@@ -509,8 +509,8 @@ const Home = () => {
               <div className="mt-4 flex items-center gap-6 text-sm text-gray-600 border-t pt-3">
                 <button
                   onClick={() => handleLike(post._id)}
-                  className={`hover:text-blue-600 ${post.likes?.includes(userData._id)
-                    ? "text-blue-600 font-semibold"
+                  className={`hover:text-blue-600 cursor-pointer ${post.likes?.includes(userData._id)
+                    ? "text-blue-600 font-semibold cursor-pointer"
                     : ""
                     }`}
                 >
@@ -549,7 +549,7 @@ const Home = () => {
                         <div className="flex gap-3">
                           {c.profilePic ? (
                             <img
-                              src={getImageUrl(c.profilePic)}
+                              src={`http://localhost:5000/${c.profilePic}`}
                               alt={c.name}
                               className="w-9 h-9 rounded-full object-cover border"
                             />
@@ -610,7 +610,7 @@ const Home = () => {
             <div className="flex items-center gap-3">
               {userData?.profilePic ? (
                 <img
-                  src={getImageUrl(userData.profilePic)}
+                  src={`http://localhost:5000/${userData.profilePic}`}
                   alt={userData?.name}
                   className="w-12 h-12 rounded-full object-cover border"
                 />
@@ -633,13 +633,6 @@ const Home = () => {
               >
                 โปรไฟล์ของฉัน
               </Link>
-
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl"
-              >
-                ออกจากระบบ
-              </button>
             </div>
           </div>
 
@@ -668,7 +661,7 @@ const Home = () => {
                     >
                       {friend.profilePic ? (
                         <img
-                          src={getImageUrl(friend.profilePic)}
+                          src={`http://localhost:5000/${friend.profilePic}`}
                           alt={friend.name}
                           className="w-11 h-11 rounded-full object-cover border"
                         />
@@ -687,10 +680,10 @@ const Home = () => {
                     </Link>
 
                     <Link
-                      to={`/profilePage/${friend._id}`}
+                      to={`/profile/${friend._id}`}
                       className="text-sm text-blue-500"
                     >
-                      ดู
+                      ดูโปรไฟล์
                     </Link>
                   </div>
                 ))}
@@ -724,7 +717,7 @@ const Home = () => {
                       >
                         {user.profilePic ? (
                           <img
-                            src={getImageUrl(user.profilePic)}
+                            src={`http://localhost:5000/${user.profilePic}`}
                             alt={user.name}
                             className="w-11 h-11 rounded-full object-cover border"
                           />

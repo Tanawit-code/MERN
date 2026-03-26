@@ -269,8 +269,8 @@ export const getGroupPosts = async (req, res) => {
         const { groupId } = req.params;
 
         const posts = await Post.find({ groupId })
+            .populate("userId", "name email profilePic")
             .sort({ createdAt: -1 });
-
         res.json({
             success: true,
             posts,
