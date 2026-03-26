@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
 import {
@@ -7,22 +7,12 @@ import {
     joinGroup,
     leaveGroup,
     getGroupPosts,
+    deleteGroup,
 } from "../services/groupApi";
-
-// เป็นหน้ารายละเอียดกลุ่ม มีหน้าที่:
-// โหลดข้อมูลกลุ่ม
-// โหลดโพสต์ของกลุ่ม
-// เข้าร่วม/ออกจากกลุ่ม
-// สร้างโพสต์ในกลุ่ม
-// ลบโพสต์
-// ไลก์โพสต์
-// คอมเมนต์
-// ลบคอมเมนต์
-
-// หน้า nàyเหมือน feed เฉพาะของแต่ละกลุ่ม และมีเงื่อนไขเรื่องสมาชิก เช่น ต้องเข้ากลุ่มก่อนถึงจะโพสต์ได้
 
 const GroupDetailPage = () => {
     const { groupId } = useParams();
+    const navigate = useNavigate();
     const { userData, isLoggedIn, isLoading } = useContext(AppContext);
 
     const [group, setGroup] = useState(null);
@@ -70,8 +60,19 @@ const GroupDetailPage = () => {
         }
     }, [groupId]);
 
+    const ownerId = useMemo(() => {
+        return group?.owner?._id || group?.owner?.id || group?.owner || "";
+    }, [group]);
+
+    const isGroupOwner = useMemo(() => {
+        return ownerId === userData?._id;
+    }, [ownerId, userData]);
+
     const isMember = useMemo(() => {
-        return group?.members?.some((member) => member._id === userData?._id);
+        return group?.members?.some((member) => {
+            const memberId = member?._id || member?.id || member;
+            return memberId === userData?._id;
+        });
     }, [group, userData]);
 
     const resetPostForm = () => {
@@ -106,6 +107,24 @@ const GroupDetailPage = () => {
             }
         } catch (err) {
             console.error("LEAVE GROUP ERROR:", err);
+        }
+    };
+
+    const handleDeleteGroup = async () => {
+        const ok = window.confirm("ต้องการลบกลุ่มนี้ใช่ไหม? การลบจะไม่สามารถกู้คืนได้");
+        if (!ok) return;
+
+        try {
+            const data = await deleteGroup(groupId);
+            if (data.success) {
+                alert("ลบกลุ่มสำเร็จ");
+                navigate("/groups");
+            } else {
+                alert(data.message || "ลบกลุ่มไม่สำเร็จ");
+            }
+        } catch (error) {
+            console.error("DELETE GROUP ERROR:", error);
+            alert(error.message || "เกิดข้อผิดพลาด");
         }
     };
 
@@ -284,9 +303,12 @@ const GroupDetailPage = () => {
 
     const renderProfileImage = (user, fallback = "U") => {
         if (user?.profilePic) {
+            const src = user.profilePic.startsWith("http")
+                ? user.profilePic
+                : `${apiBase}/${user.profilePic}`;
             return (
                 <img
-                    src={`${apiBase}/${user.profilePic}`}
+                    src={src}
                     alt="profile"
                     className="w-full h-full object-cover"
                 />
@@ -339,343 +361,418 @@ const GroupDetailPage = () => {
         <div className="bg-gray-100 min-h-screen">
             <Navbar />
 
-            <div className="flex pt-16">
-                <div className="w-1/4 p-4 hidden md:block">
-                    <div className="bg-white p-4 rounded-xl shadow">
-                        <p className="font-semibold">เมนู</p>
+            <div className="max-w-7xl mx-auto pt-20 px-4">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div className="hidden md:block lg:col-span-1">
+                        <div className="bg-white p-4 rounded-2xl shadow">
+                            <p className="font-semibold">เมนู</p>
 
-                        <div className="mt-2 space-y-2 flex flex-col">
-                            <Link
-                                to="/groups"
-                                className="hover:bg-gray-100 p-2 rounded cursor-pointer"
-                            >
-                                👥 กลุ่มทั้งหมด
-                            </Link>
-                            <Link
-                                to="/"
-                                className="hover:bg-gray-100 p-2 rounded cursor-pointer"
-                            >
-                                🏠 กลับหน้า Home
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="w-full md:w-2/4 p-4">
-                    <div className="bg-white p-4 rounded-xl shadow mb-4">
-                        <div className="flex items-start justify-between gap-4">
-                            <div>
-                                <h1 className="text-2xl font-bold">{group.name}</h1>
-                                <p className="text-gray-600 mt-1">{group.description}</p>
-                                <p className="text-sm text-gray-400 mt-2">
-                                    สมาชิก {group.members?.length || 0} คน
-                                </p>
+                            <div className="mt-2 space-y-2 flex flex-col">
+                                <Link
+                                    to="/groups"
+                                    className="hover:bg-gray-100 p-2 rounded cursor-pointer"
+                                >
+                                    👥 กลุ่มทั้งหมด
+                                </Link>
+                                <Link
+                                    to="/"
+                                    className="hover:bg-gray-100 p-2 rounded cursor-pointer"
+                                >
+                                    🏠 กลับหน้า Home
+                                </Link>
                             </div>
-
-                            {isMember ? (
-                                <button
-                                    onClick={handleLeave}
-                                    className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 cursor-pointer"
-                                >
-                                    ออกจากกลุ่ม
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={handleJoin}
-                                    className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-                                >
-                                    เข้าร่วมกลุ่ม
-                                </button>
-                            )}
                         </div>
                     </div>
 
-                    {isMember && (
-                        <div className="bg-white p-4 rounded-xl shadow mb-4">
-                            <div className="flex gap-3 items-center">
-                                <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
-                                    {renderProfileImage(userData, "U")}
-                                </div>
+                    <div className="w-full lg:col-span-2">
+                        <div className="bg-white rounded-2xl shadow overflow-hidden mb-4">
+                            <div className="relative h-56 bg-gray-200">
+                                {group.groupImage ? (
+                                    <>
+                                        <img
+                                            src={`${apiBase}${group.groupImage}`}
+                                            alt={group.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/25" />
+                                    </>
+                                ) : (
+                                    <div className="w-full h-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+                                )}
 
-                                <input
-                                    type="text"
-                                    value={content}
-                                    onChange={(e) => setContent(e.target.value)}
-                                    onKeyDown={(e) => e.key === "Enter" && handleCreatePost()}
-                                    placeholder="โพสต์อะไรในกลุ่มนี้..."
-                                    className="w-full bg-gray-100 rounded-full px-4 py-2 outline-none"
-                                />
-                            </div>
+                                <div className="absolute inset-x-0 bottom-0 p-5">
+                                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                                        <div className="text-white">
+                                            <h1 className="text-3xl md:text-4xl font-bold drop-shadow">
+                                                {group.name}
+                                            </h1>
 
-                            <div className="mt-3 flex items-center gap-3 flex-wrap">
-                                <label className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer">
-                                    📷 เพิ่มรูป
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={handleImageChange}
-                                    />
-                                </label>
+                                            <p className="text-white/90 mt-1 drop-shadow max-w-2xl">
+                                                {group.description || "ยังไม่มีรายละเอียดกลุ่ม"}
+                                            </p>
 
-                                <label className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer">
-                                    🎥 เพิ่มวิดีโอ
-                                    <input
-                                        type="file"
-                                        accept="video/*"
-                                        className="hidden"
-                                        onChange={handleVideoChange}
-                                    />
-                                </label>
-
-                                <button
-                                    onClick={handleCreatePost}
-                                    disabled={loadingPost}
-                                    className="bg-blue-800 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
-                                >
-                                    {loadingPost ? "กำลังโพสต์..." : "โพสต์"}
-                                </button>
-                            </div>
-
-                            {preview && (
-                                <div className="mt-3">
-                                    <img
-                                        src={preview}
-                                        alt="preview"
-                                        className="rounded-xl max-h-60 object-cover border"
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            setImage(null);
-                                            setPreview(null);
-                                        }}
-                                        className="text-red-500 text-xs mt-2"
-                                    >
-                                        ลบรูป
-                                    </button>
-                                </div>
-                            )}
-
-                            {videoPreview && (
-                                <div className="mt-3">
-                                    <video
-                                        src={videoPreview}
-                                        controls
-                                        className="rounded-xl max-h-60 object-cover border"
-                                    />
-                                    <button
-                                        onClick={() => {
-                                            setVideo(null);
-                                            setVideoPreview(null);
-                                        }}
-                                        className="text-red-500 text-xs mt-2"
-                                    >
-                                        ลบวิดีโอ
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {!isMember && (
-                        <div className="bg-white p-4 rounded-xl shadow mb-4 text-gray-600">
-                            เข้าร่วมกลุ่มก่อน จึงจะสามารถโพสต์ในกลุ่มได้
-                        </div>
-                    )}
-
-                    {posts.map((post) => {
-                        const isLiked = post.likes?.some(
-                            (id) =>
-                                id === userData?._id ||
-                                id?._id === userData?._id ||
-                                id?.toString?.() === userData?._id
-                        );
-
-                        const isOwner =
-                            post.userId?._id === userData?._id ||
-                            post.userId === userData?._id;
-
-                        return (
-                            <div
-                                key={post._id}
-                                className="bg-white p-4 rounded-xl shadow mb-4"
-                            >
-                                <div className="relative">
-                                    {isOwner && (
-                                        <div className="absolute top-0 right-0">
-                                            <button
-                                                onClick={() =>
-                                                    setOpenMenu(openMenu === post._id ? null : post._id)
-                                                }
-                                                className="text-gray-500 hover:text-black cursor-pointer"
-                                            >
-                                                ⋯
-                                            </button>
-
-                                            {openMenu === post._id && (
-                                                <div className="absolute right-0 mt-1 bg-white border rounded shadow z-10">
-                                                    <button
-                                                        onClick={() => handleDeletePost(post._id)}
-                                                        className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left cursor-pointer"
-                                                    >
-                                                        ลบโพสต์
-                                                    </button>
-                                                </div>
-                                            )}
+                                            <p className="text-sm text-white/80 mt-2 drop-shadow">
+                                                สมาชิก {group.members?.length || 0} คน
+                                            </p>
                                         </div>
+
+                                        {isGroupOwner && (
+                                            <div className="flex gap-2">
+                                                <Link
+                                                    to={`/groups/edit/${group._id}`}
+                                                    className="backdrop-blur-md bg-white/20 hover:bg-white/30 text-white border border-white/30 px-4 py-2.5 rounded-xl font-medium transition shadow-lg"
+                                                >
+                                                    ✏️ แก้ไขกลุ่ม
+                                                </Link>
+
+                                                <button
+                                                    onClick={handleDeleteGroup}
+                                                    className="backdrop-blur-md bg-red-500/80 hover:bg-red-600 text-white border border-white/20 px-4 py-2.5 rounded-xl font-medium transition shadow-lg cursor-pointer"
+                                                >
+                                                    🗑 ลบกลุ่ม
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-4 flex flex-wrap items-center justify-between gap-3">
+                                <div className="text-sm text-gray-500">
+                                    เจ้าของกลุ่ม:{" "}
+                                    <span className="font-medium text-gray-800">
+                                        {group.owner?.name || "-"}
+                                    </span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+
+
+                                    {isMember ? (
+                                        !isGroupOwner && (
+                                            <button
+                                                onClick={handleLeave}
+                                                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 cursor-pointer"
+                                            >
+                                                ออกจากกลุ่ม
+                                            </button>
+                                        )
+                                    ) : (
+                                        <button
+                                            onClick={handleJoin}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 cursor-pointer"
+                                        >
+                                            เข้าร่วมกลุ่ม
+                                        </button>
                                     )}
                                 </div>
+                            </div>
+                        </div>
 
-                                <div className="flex items-center gap-3 mb-2">
+                        {isMember && (
+                            <div className="bg-white p-4 rounded-2xl shadow mb-4">
+                                <div className="flex gap-3 items-center">
                                     <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
-                                        {typeof post.userId === "object"
-                                            ? renderProfileImage(post.userId, "U")
-                                            : post.name?.charAt(0).toUpperCase() || "U"}
+                                        {renderProfileImage(userData, "U")}
                                     </div>
 
-                                    <div>
-                                        <p className="font-semibold">
-                                            {post.userId?.name || post.name || "Unknown User"}
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            {new Date(post.createdAt).toLocaleString()}
-                                        </p>
-                                    </div>
+                                    <input
+                                        type="text"
+                                        value={content}
+                                        onChange={(e) => setContent(e.target.value)}
+                                        onKeyDown={(e) => e.key === "Enter" && handleCreatePost()}
+                                        placeholder="โพสต์อะไรในกลุ่มนี้..."
+                                        className="w-full bg-gray-100 rounded-full px-4 py-2 outline-none"
+                                    />
                                 </div>
 
-                                {post.content && (
-                                    <p className="mt-2 text-gray-700 whitespace-pre-wrap">
-                                        {post.content}
-                                    </p>
-                                )}
-
-                                {post.image && (
-                                    <img
-                                        src={post.image}
-                                        alt="post"
-                                        className="rounded-xl max-h-100 object-cover border"
-                                    />
-                                )}
-
-                                {post.video && (
-                                    <video
-                                        src={post.video}
-                                        controls
-                                        className="rounded-xl max-h-100 object-cover border"
-                                    />
-                                )}
-
-                                <div className="mt-3 border-t pt-3">
-                                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                                        <button
-                                            onClick={() => handleLikePost(post._id)}
-                                            className={`hover:text-blue-600 cursor-pointer ${isLiked ? "text-blue-600 font-semibold cursor-pointer" : ""
-                                                }`}
-                                        >
-                                            👍 ถูกใจ {post.likes?.length || 0}
-                                        </button>
-
-                                        <span>💬 ความคิดเห็น {post.comments?.length || 0}</span>
-                                    </div>
-
-                                    <div className="flex gap-2 mb-3">
+                                <div className="mt-3 flex items-center gap-3 flex-wrap">
+                                    <label className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer">
+                                        📷 เพิ่มรูป
                                         <input
-                                            type="text"
-                                            value={commentInputs[post._id] || ""}
-                                            onChange={(e) =>
-                                                setCommentInputs((prev) => ({
-                                                    ...prev,
-                                                    [post._id]: e.target.value,
-                                                }))
-                                            }
-                                            onKeyDown={(e) =>
-                                                e.key === "Enter" && handleAddComment(post._id)
-                                            }
-                                            placeholder="เขียนความคิดเห็น..."
-                                            className="flex-1 border rounded px-3 py-1"
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={handleImageChange}
+                                        />
+                                    </label>
+
+                                    <label className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer">
+                                        🎥 เพิ่มวิดีโอ
+                                        <input
+                                            type="file"
+                                            accept="video/*"
+                                            className="hidden"
+                                            onChange={handleVideoChange}
+                                        />
+                                    </label>
+
+                                    <button
+                                        onClick={handleCreatePost}
+                                        disabled={loadingPost}
+                                        className="bg-blue-800 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
+                                    >
+                                        {loadingPost ? "กำลังโพสต์..." : "โพสต์"}
+                                    </button>
+                                </div>
+
+                                {preview && (
+                                    <div className="mt-3">
+                                        <img
+                                            src={preview}
+                                            alt="preview"
+                                            className="rounded-xl max-h-60 object-cover border"
                                         />
                                         <button
-                                            onClick={() => handleAddComment(post._id)}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded-full cursor-pointer"
+                                            onClick={() => {
+                                                setImage(null);
+                                                setPreview(null);
+                                            }}
+                                            className="text-red-500 text-xs mt-2 cursor-pointer"
                                         >
-                                            ส่ง
+                                            ลบรูป
                                         </button>
                                     </div>
+                                )}
 
-                                    <div className="space-y-2">
-                                        {post.comments?.map((comment) => {
-                                            const isCommentOwner = comment.userId === userData?._id;
+                                {videoPreview && (
+                                    <div className="mt-3">
+                                        <video
+                                            src={videoPreview}
+                                            controls
+                                            className="rounded-xl max-h-60 object-cover border"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                setVideo(null);
+                                                setVideoPreview(null);
+                                            }}
+                                            className="text-red-500 text-xs mt-2 cursor-pointer"
+                                        >
+                                            ลบวิดีโอ
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
-                                            return (
-                                                <div
-                                                    key={comment._id}
-                                                    className="flex gap-2 items-start relative"
+                        {!isMember && (
+                            <div className="bg-white p-4 rounded-2xl shadow mb-4 text-gray-600">
+                                เข้าร่วมกลุ่มก่อน จึงจะสามารถโพสต์ในกลุ่มได้
+                            </div>
+                        )}
+
+                        {posts.map((post) => {
+                            const isLiked = post.likes?.some(
+                                (id) =>
+                                    id === userData?._id ||
+                                    id?._id === userData?._id ||
+                                    id?.toString?.() === userData?._id
+                            );
+
+                            const isOwner =
+                                post.userId?._id === userData?._id ||
+                                post.userId === userData?._id;
+
+                            return (
+                                <div
+                                    key={post._id}
+                                    className="bg-white p-4 rounded-2xl shadow mb-4"
+                                >
+                                    <div className="relative">
+                                        {isOwner && (
+                                            <div className="absolute top-0 right-0">
+                                                <button
+                                                    onClick={() =>
+                                                        setOpenMenu(openMenu === post._id ? null : post._id)
+                                                    }
+                                                    className="text-gray-500 hover:text-black cursor-pointer"
                                                 >
-                                                    <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                                                        {comment.profilePic ? (
-                                                            <img
-                                                                src={`${apiBase}/${comment.profilePic}`}
-                                                                alt="comment-profile"
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            comment.name?.charAt(0).toUpperCase() || "U"
-                                                        )}
+                                                    ⋯
+                                                </button>
+
+                                                {openMenu === post._id && (
+                                                    <div className="absolute right-0 mt-1 bg-white border rounded shadow z-10">
+                                                        <button
+                                                            onClick={() => handleDeletePost(post._id)}
+                                                            className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left cursor-pointer"
+                                                        >
+                                                            ลบโพสต์
+                                                        </button>
                                                     </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
 
-                                                    <div className="bg-gray-100 rounded-xl px-3 py-2 relative flex-1">
-                                                        {isCommentOwner && (
-                                                            <div className="absolute top-2 right-2">
-                                                                <button
-                                                                    onClick={() =>
-                                                                        setOpenMenu(openMenu === comment._id ? null : comment._id)
-                                                                    }
-                                                                    className="text-gray-500 hover:text-black cursor-pointer"
-                                                                >
-                                                                    ⋯
-                                                                </button>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
+                                            {typeof post.userId === "object"
+                                                ? renderProfileImage(post.userId, "U")
+                                                : post.name?.charAt(0).toUpperCase() || "U"}
+                                        </div>
 
-                                                                {openMenu === comment._id && (
-                                                                    <div className="absolute right-0 mt-1 bg-white border rounded shadow z-10">
-                                                                        <button
-                                                                            onClick={() => handleDeleteComment(post._id, comment._id)}
-                                                                            className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left text-xs cursor-pointer"
-                                                                        >
-                                                                            ลบ Comment
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
+                                        <div>
+                                            <p className="font-semibold">
+                                                {post.userId?.name || post.name || "Unknown User"}
+                                            </p>
+                                            <p className="text-xs text-gray-400">
+                                                {new Date(post.createdAt).toLocaleString()}
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                                        <p className="font-semibold text-sm">{comment.name}</p>
-                                                        <p className="text-sm text-gray-700">{comment.text}</p>
-                                                        <p className="text-xs text-gray-400 mt-1">
-                                                            {comment.createdAt
-                                                                ? new Date(comment.createdAt).toLocaleString()
-                                                                : ""}
-                                                        </p>
+                                    {post.content && (
+                                        <p className="mt-2 text-gray-700 whitespace-pre-wrap">
+                                            {post.content}
+                                        </p>
+                                    )}
+
+                                    {post.image && (
+                                        <img
+                                            src={post.image}
+                                            alt="post"
+                                            className="rounded-xl max-h-100 object-cover border"
+                                        />
+                                    )}
+
+                                    {post.video && (
+                                        <video
+                                            src={post.video}
+                                            controls
+                                            className="rounded-xl max-h-100 object-cover border"
+                                        />
+                                    )}
+
+                                    <div className="mt-3 border-t pt-3">
+                                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                                            <button
+                                                onClick={() => handleLikePost(post._id)}
+                                                className={`hover:text-blue-600 cursor-pointer ${isLiked ? "text-blue-600 font-semibold" : ""
+                                                    }`}
+                                            >
+                                                👍 ถูกใจ {post.likes?.length || 0}
+                                            </button>
+
+                                            <span>💬 ความคิดเห็น {post.comments?.length || 0}</span>
+                                        </div>
+
+                                        <div className="flex gap-2 mb-3">
+                                            <input
+                                                type="text"
+                                                value={commentInputs[post._id] || ""}
+                                                onChange={(e) =>
+                                                    setCommentInputs((prev) => ({
+                                                        ...prev,
+                                                        [post._id]: e.target.value,
+                                                    }))
+                                                }
+                                                onKeyDown={(e) =>
+                                                    e.key === "Enter" && handleAddComment(post._id)
+                                                }
+                                                placeholder="เขียนความคิดเห็น..."
+                                                className="flex-1 border rounded px-3 py-1"
+                                            />
+                                            <button
+                                                onClick={() => handleAddComment(post._id)}
+                                                className="bg-blue-500 text-white px-4 py-2 rounded-full cursor-pointer"
+                                            >
+                                                ส่ง
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {post.comments?.map((comment) => {
+                                                const isCommentOwner =
+                                                    comment.userId === userData?._id;
+
+                                                return (
+                                                    <div
+                                                        key={comment._id}
+                                                        className="flex gap-2 items-start relative"
+                                                    >
+                                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
+                                                            {comment.profilePic ? (
+                                                                <img
+                                                                    src={`${apiBase}/${comment.profilePic}`}
+                                                                    alt="comment-profile"
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                comment.name?.charAt(0).toUpperCase() || "U"
+                                                            )}
+                                                        </div>
+
+                                                        <div className="bg-gray-100 rounded-xl px-3 py-2 relative flex-1">
+                                                            {isCommentOwner && (
+                                                                <div className="absolute top-2 right-2">
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            setOpenMenu(
+                                                                                openMenu === comment._id
+                                                                                    ? null
+                                                                                    : comment._id
+                                                                            )
+                                                                        }
+                                                                        className="text-gray-500 hover:text-black cursor-pointer"
+                                                                    >
+                                                                        ⋯
+                                                                    </button>
+
+                                                                    {openMenu === comment._id && (
+                                                                        <div className="absolute right-0 mt-1 bg-white border rounded shadow z-10">
+                                                                            <button
+                                                                                onClick={() =>
+                                                                                    handleDeleteComment(
+                                                                                        post._id,
+                                                                                        comment._id
+                                                                                    )
+                                                                                }
+                                                                                className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left text-xs cursor-pointer"
+                                                                            >
+                                                                                ลบ Comment
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+
+                                                            <p className="font-semibold text-sm">
+                                                                {comment.name}
+                                                            </p>
+                                                            <p className="text-sm text-gray-700">
+                                                                {comment.text}
+                                                            </p>
+                                                            <p className="text-xs text-gray-400 mt-1">
+                                                                {comment.createdAt
+                                                                    ? new Date(
+                                                                        comment.createdAt
+                                                                    ).toLocaleString()
+                                                                    : ""}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        })}
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
 
-                <div className="w-1/4 p-4 hidden lg:block">
-                    <div className="bg-white p-4 rounded-xl shadow">
-                        <p className="font-semibold mb-2">ข้อมูลกลุ่ม</p>
-                        <p className="text-sm text-gray-600">ชื่อกลุ่ม: {group.name}</p>
-                        <p className="text-sm text-gray-600">
-                            สมาชิก: {group.members?.length || 0} คน
-                        </p>
-                        <p className="text-sm text-gray-600 mt-2">
-                            เจ้าของ: {group.owner?.name || "-"}
-                        </p>
+                    <div className="hidden lg:block lg:col-span-1">
+                        <div className="bg-white p-4 rounded-2xl shadow">
+                            <p className="font-semibold mb-2">ข้อมูลกลุ่ม</p>
+                            <p className="text-sm text-gray-600">ชื่อกลุ่ม: {group.name}</p>
+                            <p className="text-sm text-gray-600">
+                                สมาชิก: {group.members?.length || 0} คน
+                            </p>
+                            <p className="text-sm text-gray-600 mt-2">
+                                เจ้าของ: {group.owner?.name || "-"}
+                            </p>
+
+                        </div>
                     </div>
                 </div>
             </div>

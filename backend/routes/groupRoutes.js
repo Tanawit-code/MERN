@@ -11,8 +11,10 @@
 
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware.js";
+import uploadGroupImage from "../middleware/upload.js";
 import {
     createGroup,
+    updateGroup,
     deleteGroup,
     joinGroup,
     leaveGroup,
@@ -25,14 +27,22 @@ const router = express.Router();
 
 router.get("/", getGroups);
 router.get("/:groupId", getGroupById);
-
-//ไม่อยากให้คนเห็นโพส
-// router.get("/:groupId/posts", authMiddleware, getGroupPosts); 
-
-//อยากให้คนเห็นโพส
 router.get("/:groupId/posts", getGroupPosts);
 
-router.post("/", authMiddleware, createGroup);
+router.post(
+    "/",
+    authMiddleware,
+    uploadGroupImage.single("groupImage"),
+    createGroup
+);
+
+router.put(
+    "/:groupId",
+    authMiddleware,
+    uploadGroupImage.single("groupImage"),
+    updateGroup
+);
+
 router.post("/:groupId/join", authMiddleware, joinGroup);
 router.post("/:groupId/leave", authMiddleware, leaveGroup);
 router.delete("/:groupId", authMiddleware, deleteGroup);

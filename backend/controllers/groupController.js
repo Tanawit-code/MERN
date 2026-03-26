@@ -10,15 +10,13 @@
 // สรุปคือเป็น controller หลักของระบบ group ทั้งหมด
 // โดย getGroupPosts ใช้ดึงโพสต์เฉพาะของกลุ่มนั้นจาก Post.find({ groupId: group._id })
 
-import mongoose from "mongoose";
 import Group from "../models/Group.js";
 import Post from "../models/Post.js";
-import userModel from "../models/userModel.js";
 
 // สร้างกลุ่ม
 export const createGroup = async (req, res) => {
     try {
-        const { name, description, coverImage } = req.body;
+        const { name, description } = req.body;
 
         if (!name || !name.trim()) {
             return res.status(400).json({
@@ -27,10 +25,15 @@ export const createGroup = async (req, res) => {
             });
         }
 
+        let groupImage = "";
+        if (req.file) {
+            groupImage = `/uploads/groups/${req.file.filename}`;
+        }
+
         const group = await Group.create({
             name: name.trim(),
             description: description || "",
-            coverImage: coverImage || "",
+            groupImage,
             owner: req.userId,
             members: [req.userId],
         });
@@ -40,6 +43,7 @@ export const createGroup = async (req, res) => {
             group,
         });
     } catch (error) {
+        console.error("CREATE GROUP ERROR:", error);
         res.status(500).json({
             success: false,
             message: error.message,
@@ -47,12 +51,14 @@ export const createGroup = async (req, res) => {
     }
 };
 
-// ลบกลุ่ม (เฉพาะ owner)
-export const deleteGroup = async (req, res) => {
+// แก้ไขกลุ่ม
+export const updateGroup = async (req, res) => {
     try {
         const { groupId } = req.params;
+        const { name, description } = req.body;
 
         const group = await Group.findById(groupId);
+
         if (!group) {
             return res.status(404).json({
                 success: false,
@@ -63,7 +69,55 @@ export const deleteGroup = async (req, res) => {
         if (group.owner.toString() !== req.userId) {
             return res.status(403).json({
                 success: false,
-                message: "มีเพียงเจ้าของกลุ่มเท่านั้นที่ลบกลุ่มได้",
+                message: "เฉพาะเจ้าของกลุ่มเท่านั้นที่แก้ไขได้",
+            });
+        }
+
+        if (name !== undefined) {
+            group.name = name.trim();
+        }
+
+        if (description !== undefined) {
+            group.description = description;
+        }
+
+        if (req.file) {
+            group.groupImage = `/uploads/groups/${req.file.filename}`;
+        }
+
+        await group.save();
+
+        res.json({
+            success: true,
+            message: "แก้ไขกลุ่มสำเร็จ",
+            group,
+        });
+    } catch (error) {
+        console.error("UPDATE GROUP ERROR:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+// ลบกลุ่ม
+export const deleteGroup = async (req, res) => {
+    try {
+        const { groupId } = req.params;
+        const group = await Group.findById(groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                success: false,
+                message: "ไม่พบกลุ่ม",
+            });
+        }
+
+        if (group.owner.toString() !== req.userId) {
+            return res.status(403).json({
+                success: false,
+                message: "เฉพาะเจ้าของกลุ่มเท่านั้นที่ลบได้",
             });
         }
 
@@ -75,6 +129,7 @@ export const deleteGroup = async (req, res) => {
             message: "ลบกลุ่มสำเร็จ",
         });
     } catch (error) {
+        console.error("DELETE GROUP ERROR:", error);
         res.status(500).json({
             success: false,
             message: error.message,
@@ -82,12 +137,11 @@ export const deleteGroup = async (req, res) => {
     }
 };
 
-// เข้าร่วมกลุ่ม
 export const joinGroup = async (req, res) => {
     try {
         const { groupId } = req.params;
-
         const group = await Group.findById(groupId);
+
         if (!group) {
             return res.status(404).json({
                 success: false,
@@ -115,6 +169,7 @@ export const joinGroup = async (req, res) => {
             group,
         });
     } catch (error) {
+        console.error("JOIN GROUP ERROR:", error);
         res.status(500).json({
             success: false,
             message: error.message,
@@ -122,12 +177,11 @@ export const joinGroup = async (req, res) => {
     }
 };
 
-// ออกจากกลุ่ม
 export const leaveGroup = async (req, res) => {
     try {
         const { groupId } = req.params;
-
         const group = await Group.findById(groupId);
+
         if (!group) {
             return res.status(404).json({
                 success: false,
@@ -138,7 +192,7 @@ export const leaveGroup = async (req, res) => {
         if (group.owner.toString() === req.userId) {
             return res.status(400).json({
                 success: false,
-                message: "เจ้าของกลุ่มออกไม่ได้ ให้ลบกลุ่มแทน",
+                message: "เจ้าของกลุ่มออกจากกลุ่มไม่ได้",
             });
         }
 
@@ -154,6 +208,7 @@ export const leaveGroup = async (req, res) => {
             group,
         });
     } catch (error) {
+        console.error("LEAVE GROUP ERROR:", error);
         res.status(500).json({
             success: false,
             message: error.message,
@@ -161,7 +216,6 @@ export const leaveGroup = async (req, res) => {
     }
 };
 
-// ดูกลุ่มทั้งหมด
 export const getGroups = async (req, res) => {
     try {
         const groups = await Group.find()
@@ -174,6 +228,7 @@ export const getGroups = async (req, res) => {
             groups,
         });
     } catch (error) {
+        console.error("GET GROUPS ERROR:", error);
         res.status(500).json({
             success: false,
             message: error.message,
@@ -181,7 +236,6 @@ export const getGroups = async (req, res) => {
     }
 };
 
-// ดูกลุ่มเดียว
 export const getGroupById = async (req, res) => {
     try {
         const { groupId } = req.params;
@@ -202,6 +256,7 @@ export const getGroupById = async (req, res) => {
             group,
         });
     } catch (error) {
+        console.error("GET GROUP BY ID ERROR:", error);
         res.status(500).json({
             success: false,
             message: error.message,
@@ -209,33 +264,11 @@ export const getGroupById = async (req, res) => {
     }
 };
 
-// ดูโพสต์ในกลุ่ม
 export const getGroupPosts = async (req, res) => {
     try {
         const { groupId } = req.params;
 
-        const group = await Group.findById(groupId);
-        if (!group) {
-            return res.status(404).json({
-                success: false,
-                message: "ไม่พบกลุ่ม",
-            });
-        }
-
-        // // 🔐 เช็คสมาชิก
-        // const isMember = group.members.some(
-        //     (memberId) => memberId.toString() === req.userId
-        // );
-
-        // if (!isMember) {
-        //     return res.status(403).json({
-        //         success: false,
-        //         message: "เฉพาะสมาชิกกลุ่มเท่านั้นที่ดูโพสต์ได้",
-        //     });
-        // }
-
-        const posts = await Post.find({ groupId: group._id })
-            .populate("userId", "name profilePic")
+        const posts = await Post.find({ groupId })
             .sort({ createdAt: -1 });
 
         res.json({

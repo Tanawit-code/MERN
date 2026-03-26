@@ -3,16 +3,6 @@ import { useNavigate, Link } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
 
-// หน้า feed หลักของระบบ ทำหน้าที่:
-// โหลดโพสต์ทั้งหมดจาก /api/posts/all
-// สร้างโพสต์ใหม่
-// อัปโหลดรูป/วิดีโอ
-// ไลก์โพสต์
-// คอมเมนต์
-// ลบโพสต์
-// ลบคอมเมนต์
-// แสดงข้อมูล user ที่ล็อกอิน
-
 const Home = () => {
   const navigate = useNavigate();
   const { isLoggedIn, userData, logout, isLoading } = useContext(AppContext);
@@ -30,9 +20,17 @@ const Home = () => {
 
   const [loadingPost, setLoadingPost] = useState(false);
 
+  // เพิ่ม state สำหรับเพื่อน และคนแนะนำ
+  const [friends, setFriends] = useState([]);
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
+
   useEffect(() => {
     if (!isLoading && isLoggedIn) {
       fetchPosts();
+      fetchFriends();
+      fetchSuggestedUsers();
     }
   }, [isLoading, isLoggedIn]);
 
@@ -54,6 +52,87 @@ const Home = () => {
     }
   };
 
+  // โหลดรายชื่อเพื่อน
+  // เปลี่ยน URL นี้ให้ตรงกับ backend ของคุณ ถ้า route จริงไม่ใช่ /api/friends
+  const fetchFriends = async () => {
+    try {
+      setLoadingFriends(true);
+
+      const res = await fetch("http://localhost:5000/api/friends", {
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setFriends(data.friends || []);
+      } else {
+        setFriends([]);
+      }
+    } catch (err) {
+      console.error("โหลดรายชื่อเพื่อนไม่ได้:", err);
+      setFriends([]);
+    } finally {
+      setLoadingFriends(false);
+    }
+  };
+
+  // โหลดคนที่แนะนำเป็นเพื่อน
+  // เปลี่ยน URL นี้ให้ตรงกับ backend ของคุณ ถ้า route จริงไม่ใช่ /api/users/suggestions
+  const fetchSuggestedUsers = async () => {
+    try {
+      setLoadingSuggestions(true);
+
+      const res = await fetch("http://localhost:5000/api/friends/suggestions", {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        console.error("โหลดคนแนะนำไม่สำเร็จ:", res.status);
+        setSuggestedUsers([]);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSuggestedUsers(data.users || []);
+      } else {
+        setSuggestedUsers([]);
+      }
+    } catch (err) {
+      console.error("โหลดคนแนะนำไม่ได้:", err);
+      setSuggestedUsers([]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  // ส่งคำขอเป็นเพื่อน
+  // เปลี่ยน URL ให้ตรงกับ backend ของคุณ
+  const handleSendFriendRequest = async (userId) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/friends/request", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ receiverId: userId }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setSuggestedUsers((prev) => prev.filter((user) => user._id !== userId));
+      } else {
+        alert(data.message || "ส่งคำขอเป็นเพื่อนไม่สำเร็จ");
+      }
+    } catch (err) {
+      console.error("SEND FRIEND REQUEST ERROR:", err);
+    }
+  };
+
   const resetPostForm = () => {
     setContent("");
     setImage(null);
@@ -66,8 +145,6 @@ const Home = () => {
     if ((!content.trim() && !image && !video) || loadingPost || !userData?._id) {
       return;
     }
-    console.log("POST VIDEO:", video ? "HAS VIDEO" : "NO VIDEO");
-    console.log("VIDEO LENGTH:", video?.length);
 
     setLoadingPost(true);
 
@@ -141,7 +218,6 @@ const Home = () => {
 
   const handleComment = async (postId) => {
     const text = commentText[postId];
-
     if (!text || !text.trim()) return;
 
     try {
@@ -153,9 +229,7 @@ const Home = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            text,
-          }),
+          body: JSON.stringify({ text }),
         }
       );
 
@@ -224,36 +298,6 @@ const Home = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleCreateGroupPost = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/posts/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          content,
-          image,
-          video,
-          groupId,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        alert("โพสต์สำเร็จ");
-        fetchPostsInGroup();
-        setPostText("");
-      } else {
-        alert(data.message || "โพสต์ไม่สำเร็จ");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -268,7 +312,6 @@ const Home = () => {
     return (
       <div className="min-h-screen bg-gray-100">
         <Navbar />
-
         <div className="max-w-3xl mx-auto px-6 py-16">
           <div className="bg-white rounded-2xl shadow p-8 text-center">
             <h1 className="text-3xl font-bold mb-4">ยินดีต้อนรับ</h1>
@@ -325,8 +368,6 @@ const Home = () => {
               >
                 👥 รายชื่อเพื่อน
               </Link>
-
-
             </ul>
           </div>
         </div>
@@ -393,7 +434,6 @@ const Home = () => {
                   alt="preview"
                   className="rounded-xl max-h-100 object-cover border"
                 />
-
                 <button
                   onClick={() => {
                     setImage(null);
@@ -413,7 +453,6 @@ const Home = () => {
                   controls
                   className="rounded-xl max-h-100 object-cover border"
                 />
-
                 <button
                   onClick={() => {
                     setVideo(null);
@@ -454,6 +493,7 @@ const Home = () => {
                   </div>
                 )}
               </div>
+
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
                   {post.userId?.profilePic ? (
@@ -492,16 +532,22 @@ const Home = () => {
                   className="mt-3 w-full max-h-[400px] max-w-[500px] object-cover rounded-xl border"
                 />
               )}
-              <div className="mt-3 flex gap-2 mt-3 border-t pt-3"></div>
+
+              <div className="mt-3 flex gap-2 border-t pt-3"></div>
+
               <button
                 onClick={() => handleLike(post._id)}
-                className={`hover:text-blue-600 cursor-pointer ${post.likes?.includes(userData._id) ? "text-blue-600 font-semibold cursor-pointer" : ""
+                className={`hover:text-blue-600 cursor-pointer ${post.likes?.includes(userData._id)
+                  ? "text-blue-600 font-semibold"
+                  : ""
                   }`}
               >
                 👍 ถูกใจ {post.likes?.length || 0}
               </button>
+
               <span> 💬 ความคิดเห็น {post.comments?.length || 0}</span>
-              <div className="mt-3 flex gap-2 ">
+
+              <div className="mt-3 flex gap-2">
                 <input
                   type="text"
                   placeholder="เขียนความคิดเห็น..."
@@ -525,12 +571,9 @@ const Home = () => {
               </div>
 
               <div className="mt-3 space-y-2">
-
                 {(Array.isArray(post.comments) ? post.comments : [])
-
                   .filter((c) => c?.name && c?.text)
                   .map((c, i) => (
-
                     <div
                       key={c._id || i}
                       className="flex gap-2 items-start relative"
@@ -601,11 +644,128 @@ const Home = () => {
           ))}
         </div>
 
-        <div className="w-1/4 p-4 hidden lg:block">
+        <div className="w-1/4 p-4 hidden lg:block space-y-4">
           <div className="bg-white p-4 rounded-xl shadow">
             <p className="font-semibold mb-2">ข้อมูลผู้ใช้</p>
             <p className="text-sm text-gray-600">ชื่อ: {userData?.name}</p>
             <p className="text-sm text-gray-600">อีเมล: {userData?.email}</p>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl shadow">
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-semibold">รายชื่อเพื่อน</p>
+              <Link to="/friends" className="text-sm text-blue-600 hover:underline">
+                ดูทั้งหมด
+              </Link>
+            </div>
+
+            {loadingFriends ? (
+              <p className="text-sm text-gray-500">กำลังโหลด...</p>
+            ) : friends.length === 0 ? (
+              <p className="text-sm text-gray-500">ยังไม่มีเพื่อน</p>
+            ) : (
+              <div className="space-y-3">
+                {friends.slice(0, 5).map((friend) => (
+                  <div
+                    key={friend._id}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold shrink-0">
+                        {friend.profilePic ? (
+                          <img
+                            src={`http://localhost:5000/${friend.profilePic}`}
+                            alt={friend.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          friend.name?.charAt(0).toUpperCase()
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {friend.name}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {friend.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Link
+                      to="/friends"
+                      className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-lg"
+                    >
+                      ดู
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white p-4 rounded-xl shadow">
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-semibold">คนที่แนะนำ</p>
+              <Link to="/search" className="text-sm text-blue-600 hover:underline">
+                ค้นหาเพิ่ม
+              </Link>
+            </div>
+
+            {loadingSuggestions ? (
+              <p className="text-sm text-gray-500">กำลังโหลด...</p>
+            ) : suggestedUsers.length === 0 ? (
+              <p className="text-sm text-gray-500">ยังไม่มีคำแนะนำ</p>
+            ) : (
+              <div className="space-y-3">
+                {suggestedUsers.slice(0, 5).map((user) => (
+                  <div
+                    key={user._id}
+                    className="border border-gray-100 rounded-xl p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-500 flex items-center justify-center text-white font-bold shrink-0">
+                        {user.profilePic ? (
+                          <img
+                            src={`http://localhost:5000/${user.profilePic}`}
+                            alt={user.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          user.name?.charAt(0).toUpperCase()
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        onClick={() => handleSendFriendRequest(user._id)}
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2 rounded-lg cursor-pointer"
+                      >
+                        เพิ่มเพื่อน
+                      </button>
+
+                      <Link
+                        to="/search"
+                        className="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-sm px-3 py-2 rounded-lg"
+                      >
+                        ดูโปรไฟล์
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

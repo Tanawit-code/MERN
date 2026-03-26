@@ -429,3 +429,48 @@ export const unfriend = async (req, res) => {
         });
     }
 };
+export const getSuggestions = async (req, res) => {
+    try {
+        const userId = req.userId;
+
+        // เพื่อนทั้งหมด
+        const friendships = await friendshipModel.find({
+            users: userId,
+        });
+
+        const friendIds = friendships.flatMap((f) =>
+            f.users.map((id) => id.toString())
+        );
+
+        // request ที่เคยส่งไปแล้ว
+        const sentRequests = await friendRequestModel.find({
+            sender: userId,
+            status: "pending",
+        });
+
+        const requestedIds = sentRequests.map((r) => r.receiver.toString());
+
+        const excludeIds = [
+            ...friendIds,
+            ...requestedIds,
+            String(userId),
+        ];
+
+        const users = await userModel.find({
+            _id: { $nin: excludeIds },
+        })
+            .select("_id name email profilePic")
+            .limit(10);
+
+        return res.status(200).json({
+            success: true,
+            users,
+        });
+    } catch (error) {
+        console.log("getSuggestions error:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};

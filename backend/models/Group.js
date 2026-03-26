@@ -20,7 +20,7 @@ const groupSchema = new mongoose.Schema(
             type: String,
             default: "",
         },
-        coverImage: {
+        groupImage: {
             type: String,
             default: "",
         },
@@ -40,5 +40,4 @@ const groupSchema = new mongoose.Schema(
 );
 
 const Group = mongoose.models.Group || mongoose.model("Group", groupSchema);
-
 export default Group;

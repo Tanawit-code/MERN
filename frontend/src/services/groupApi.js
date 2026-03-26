@@ -11,12 +11,22 @@
 
 const API_URL = "http://localhost:5000/api/groups";
 
+const handleResponse = async (res) => {
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.message || "เกิดข้อผิดพลาด");
+    }
+
+    return data;
+};
+
 export const getGroups = async () => {
     const res = await fetch(API_URL, {
         method: "GET",
         credentials: "include",
     });
-    return res.json();
+    return handleResponse(res);
 };
 
 export const getGroupById = async (groupId) => {
@@ -24,19 +34,25 @@ export const getGroupById = async (groupId) => {
         method: "GET",
         credentials: "include",
     });
-    return res.json();
+    return handleResponse(res);
 };
 
-export const createGroup = async (groupData) => {
+export const createGroup = async (formData) => {
     const res = await fetch(API_URL, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
         credentials: "include",
-        body: JSON.stringify(groupData),
+        body: formData,
     });
-    return res.json();
+    return handleResponse(res);
+};
+
+export const updateGroup = async (groupId, formData) => {
+    const res = await fetch(`${API_URL}/${groupId}`, {
+        method: "PUT",
+        credentials: "include",
+        body: formData,
+    });
+    return handleResponse(res);
 };
 
 export const deleteGroup = async (groupId) => {
@@ -44,7 +60,7 @@ export const deleteGroup = async (groupId) => {
         method: "DELETE",
         credentials: "include",
     });
-    return res.json();
+    return handleResponse(res);
 };
 
 export const joinGroup = async (groupId) => {
@@ -52,7 +68,7 @@ export const joinGroup = async (groupId) => {
         method: "POST",
         credentials: "include",
     });
-    return res.json();
+    return handleResponse(res);
 };
 
 export const leaveGroup = async (groupId) => {
@@ -60,7 +76,7 @@ export const leaveGroup = async (groupId) => {
         method: "POST",
         credentials: "include",
     });
-    return res.json();
+    return handleResponse(res);
 };
 
 export const getGroupPosts = async (groupId) => {
@@ -68,5 +84,5 @@ export const getGroupPosts = async (groupId) => {
         method: "GET",
         credentials: "include",
     });
-    return res.json();
+    return handleResponse(res);
 };

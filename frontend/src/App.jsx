@@ -35,6 +35,8 @@ import ProfilePage from "./pages/ProfilePage";
 import GroupsPage from "./pages/GroupsPage";
 import GroupDetailPage from "./pages/GroupDetailPage";
 
+import EditGroupPage from "./pages/EditGroupPage";
+
 const App = () => {
   return (
     <>
@@ -61,6 +63,8 @@ const App = () => {
 
         <Route path="/groups" element={<GroupsPage />} />
         <Route path="/groups/:groupId" element={<GroupDetailPage />} />
+
+        <Route path="/groups/edit/:groupId" element={<EditGroupPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
