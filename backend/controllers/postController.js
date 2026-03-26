@@ -294,3 +294,27 @@ export const deletePost = async (req, res) => {
         });
     }
 };
+// ดึงโพสต์ของ user คนเดียว (สำหรับหน้า Profile)
+export const getPostsByUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const posts = await Post.find({
+            userId,
+            groupId: null,
+        })
+            .populate("userId", "name profilePic")
+            .sort({ createdAt: -1 });
+
+        return res.json({
+            success: true,
+            posts,
+        });
+    } catch (error) {
+        console.error("GET POSTS BY USER ERROR:", error);
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};

@@ -1,23 +1,15 @@
-// โหลด env ต่อฐานข้อมูล
-// เปิดใช้งาน middleware เช่น cors, express.json, cookieParser
-// เปิด static path /uploads
-// ผูก route หลัก:
-// /api/auth
-// /api/posts
-// /api/chat
-// /api/groups
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import "dotenv/config";
+
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 import chatRouter from "./routes/chatRoute.js";
 import groupRoutes from "./routes/groupRoutes.js";
-import friendRoutes from "./routes/friendRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -52,7 +44,7 @@ app.use("/api/posts", postRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRouter);
 app.use("/api/groups", groupRoutes);
-app.use("/api/friends", friendRoutes);
+app.use("/api/profile", profileRoutes);
 
 app.get("/", (req, res) => {
   res.send("API Running welcome to backend");
@@ -61,13 +53,4 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
-
-app.use((err, req, res, next) => {
-  console.error("SERVER ERROR:", err);
-
-  return res.status(500).json({
-    success: false,
-    message: err.message || "เกิดข้อผิดพลาดในเซิร์ฟเวอร์",
-  });
 });

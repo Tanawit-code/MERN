@@ -12,6 +12,7 @@ import express from "express";
 import {
     createPost,
     getPosts,
+    getPostsByUser,
     toggleLike,
     addComment,
     deleteComment,
@@ -22,10 +23,12 @@ import authMiddleware from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 router.get("/all", getPosts);
+router.get("/user/:userId", getPostsByUser);
 
 router.post("/create", authMiddleware, createPost);
 router.post("/like/:id", authMiddleware, toggleLike);
 router.post("/comment/:id", authMiddleware, addComment);
+
 router.delete("/comment/:postId/:commentId", authMiddleware, deleteComment);
 router.delete("/:postId", authMiddleware, deletePost);
 

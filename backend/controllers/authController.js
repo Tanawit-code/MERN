@@ -327,7 +327,7 @@ export const getMe = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.userId;
-    const { name, email } = req.body;
+    const { name, bio, profilePic, coverPic } = req.body;
 
     const user = await userModel.findById(userId);
     if (!user) {
@@ -337,51 +337,27 @@ export const updateProfile = async (req, res) => {
       });
     }
 
-    if (email && email !== user.email) {
-      const exists = await userModel.findOne({ email });
-      if (exists) {
-        return res.status(400).json({
-          success: false,
-          message: "อีเมลนี้ถูกใช้งานแล้ว",
-        });
-      }
-    }
-
-    if (name) user.name = name;
-    if (email) user.email = email;
-
-    if (req.file) {
-      if (user.profilePic) {
-        const oldPath = path.join(process.cwd(), user.profilePic);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
-
-      user.profilePic = req.file.path.replace(/\\/g, "/");
-    }
+    if (typeof name === "string") user.name = name;
+    if (typeof bio === "string") user.bio = bio;
+    if (typeof profilePic === "string") user.profilePic = profilePic;
+    if (typeof coverPic === "string") user.coverPic = coverPic;
 
     await user.save();
 
-    return res.status(200).json({
+    return res.json({
       success: true,
-      message: "อัปเดตข้อมูลผู้ใช้สำเร็จ",
-      user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        profilePic: user.profilePic,
-        isVerified: user.isVerified,
-      },
+      message: "อัปเดตโปรไฟล์สำเร็จ",
+      user,
     });
   } catch (error) {
-    console.log("UPDATE PROFILE ERROR:", error);
+    console.error("UPDATE PROFILE ERROR:", error);
     return res.status(500).json({
       success: false,
       message: error.message,
     });
   }
 };
+
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
