@@ -356,7 +356,7 @@ const GroupDetailPage = () => {
         if (user?.profilePic) {
             return (
                 <img
-                    src={getImageUrl(user.profilePic)}
+                    src={`http://localhost:5000/${user.profilePic}`}
                     alt="profile"
                     className="w-full h-full object-cover"
                 />
@@ -438,9 +438,9 @@ const GroupDetailPage = () => {
                                 {group.groupImage ? (
                                     <>
                                         <img
-                                            src={preview}
-                                            alt="preview"
-                                            className="rounded-xl max-h-60 object-cover border"
+                                            src={getImageUrl(group.groupImage)}
+                                            alt={group.name}
+                                            className="w-full h-full object-cover"
                                         />
                                         <div className="absolute inset-0 bg-black/25" />
                                     </>
@@ -565,7 +565,7 @@ const GroupDetailPage = () => {
                                 {preview && (
                                     <div className="mt-3">
                                         <img
-                                            src={`http://localhost:5000${group.groupImage}`}
+                                            src={preview}
                                             alt="preview"
                                             className="rounded-xl max-h-60 object-cover border"
                                         />
@@ -659,17 +659,17 @@ const GroupDetailPage = () => {
                                                 to={`/profile/${author.id}`}
                                                 className="flex items-center gap-3 mb-2 hover:opacity-80"
                                             >
-                                                <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
-                                                    {author.profilePic ? (
-                                                        <img
-                                                            src={getImageUrl(author.profilePic)}
-                                                            alt={author.name}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        author.name?.charAt(0).toUpperCase() || "U"
-                                                    )}
-                                                </div>
+
+                                                {author.profilePic ? (
+                                                    <img
+                                                        src={`http://localhost:5000/${author.profilePic}`}
+                                                        alt={author.name}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    author.name?.charAt(0).toUpperCase() || "U"
+                                                )}
+
 
                                                 <div>
                                                     <p className="font-semibold">{author.name}</p>
@@ -704,7 +704,7 @@ const GroupDetailPage = () => {
 
                                     {post.video && (
                                         <video
-                                            src={post.video}
+                                            src={getImageUrl(post.video)}
                                             controls
                                             className="rounded-xl max-h-100 object-cover border"
                                         />
@@ -763,7 +763,7 @@ const GroupDetailPage = () => {
                                                         <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
                                                             {commentAuthor.profilePic ? (
                                                                 <img
-                                                                    src={getImageUrl(commentAuthor.profilePic)}
+                                                                    src={`http://localhost:5000/${commentAuthor.profilePic}`}
                                                                     alt={commentAuthor.name}
                                                                     className="w-full h-full object-cover"
                                                                 />
