@@ -53,9 +53,18 @@ const Home = () => {
   const fetchFriends = async () => {
     try {
       setLoadingFriends(true);
+
       const res = await fetch(`${API_BASE}/api/friends`, {
         credentials: "include",
       });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("FRIENDS API ERROR:", res.status, text);
+        setFriends([]);
+        return;
+      }
+
       const data = await res.json();
 
       if (data.success) {
@@ -473,8 +482,8 @@ const Home = () => {
                 <button
                   onClick={() => handleLike(post._id)}
                   className={`hover:text-blue-600 ${post.likes?.includes(userData._id)
-                      ? "text-blue-600 font-semibold"
-                      : ""
+                    ? "text-blue-600 font-semibold"
+                    : ""
                     }`}
                 >
                   ถูกใจ {post.likes?.length || 0}
@@ -596,12 +605,6 @@ const Home = () => {
               >
                 โปรไฟล์ของฉัน
               </Link>
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl"
-              >
-                ออกจากระบบ
-              </button>
             </div>
           </div>
 

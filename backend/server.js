@@ -10,6 +10,7 @@ import postRoutes from "./routes/postRoutes.js";
 import chatRouter from "./routes/chatRoute.js";
 import groupRoutes from "./routes/groupRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
+import friendRoutes from "./routes/friendRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -45,6 +46,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/chat", chatRouter);
 app.use("/api/groups", groupRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/friends", friendRoutes);
 
 app.get("/", (req, res) => {
   res.send("API Running welcome to backend");
