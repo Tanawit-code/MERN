@@ -5,6 +5,20 @@ import Navbar from "../components/Navbar";
 
 const API_BASE = "http://localhost:5000";
 
+const getImageUrl = (path) => {
+  if (!path) return "https://via.placeholder.com/40";
+
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+
+  if (path.startsWith("/uploads")) {
+    return `${API_BASE}${path}`;
+  }
+
+  return `${API_BASE}/uploads/${path}`;
+};
+
 const Home = () => {
   const navigate = useNavigate();
   const { isLoggedIn, userData, logout, isLoading } = useContext(AppContext);
@@ -40,13 +54,20 @@ const Home = () => {
 
   const fetchPosts = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/posts/all`);
+      const res = await fetch(`${API_BASE}/api/posts/all`, {
+        credentials: "include",
+      });
+
       const data = await res.json();
+
       if (data.success) {
         setPosts(data.posts || []);
+      } else {
+        setPosts([]);
       }
     } catch (err) {
       console.error("โหลดโพสต์ไม่ได้:", err);
+      setPosts([]);
     }
   };
 
@@ -83,7 +104,8 @@ const Home = () => {
   const fetchSuggestedUsers = async () => {
     try {
       setLoadingSuggestions(true);
-      const res = await fetch(`${API_BASE}/api/profile/suggestions`, {
+
+      const res = await fetch(`${API_BASE}/api/friends/suggestions`, {
         credentials: "include",
       });
 
@@ -102,22 +124,27 @@ const Home = () => {
     }
   };
 
-  const handleToggleFollow = async (userId) => {
+  const handleSendFriendRequest = async (receiverId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/profile/follow/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/friends/request`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
+        body: JSON.stringify({ receiverId }),
       });
 
       const data = await res.json();
 
-      if (data.success) {
-        fetchSuggestedUsers();
-      } else {
-        alert(data.message || "ติดตามไม่สำเร็จ");
+      if (!res.ok) {
+        throw new Error(data.message || "ส่งคำขอเป็นเพื่อนไม่สำเร็จ");
       }
+
+      setSuggestedUsers((prev) => prev.filter((u) => u._id !== receiverId));
     } catch (err) {
-      console.error("FOLLOW ERROR:", err);
+      console.error("SEND FRIEND REQUEST ERROR:", err);
+      alert(err.message);
     }
   };
 
@@ -195,6 +222,7 @@ const Home = () => {
       });
 
       const data = await res.json();
+
       if (data.success) {
         fetchPosts();
       }
@@ -313,7 +341,7 @@ const Home = () => {
             <div className="flex items-center gap-3">
               {userData?.profilePic ? (
                 <img
-                  src={userData.profilePic}
+                  src={getImageUrl(userData.profilePic)}
                   alt={userData?.name}
                   className="w-12 h-12 rounded-full object-cover border"
                 />
@@ -405,7 +433,7 @@ const Home = () => {
                   <Link to={`/profile/${post.userId?._id}`}>
                     {post.userId?.profilePic ? (
                       <img
-                        src={post.userId.profilePic}
+                        src={getImageUrl(post.userId.profilePic)}
                         alt={post.userId?.name}
                         className="w-12 h-12 rounded-full object-cover border"
                       />
@@ -521,7 +549,7 @@ const Home = () => {
                         <div className="flex gap-3">
                           {c.profilePic ? (
                             <img
-                              src={c.profilePic}
+                              src={getImageUrl(c.profilePic)}
                               alt={c.name}
                               className="w-9 h-9 rounded-full object-cover border"
                             />
@@ -582,7 +610,7 @@ const Home = () => {
             <div className="flex items-center gap-3">
               {userData?.profilePic ? (
                 <img
-                  src={userData.profilePic}
+                  src={getImageUrl(userData.profilePic)}
                   alt={userData?.name}
                   className="w-12 h-12 rounded-full object-cover border"
                 />
@@ -605,6 +633,13 @@ const Home = () => {
               >
                 โปรไฟล์ของฉัน
               </Link>
+
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl"
+              >
+                ออกจากระบบ
+              </button>
             </div>
           </div>
 
@@ -633,7 +668,7 @@ const Home = () => {
                     >
                       {friend.profilePic ? (
                         <img
-                          src={friend.profilePic}
+                          src={getImageUrl(friend.profilePic)}
                           alt={friend.name}
                           className="w-11 h-11 rounded-full object-cover border"
                         />
@@ -652,7 +687,7 @@ const Home = () => {
                     </Link>
 
                     <Link
-                      to={`/profile/${friend._id}`}
+                      to={`/profilePage/${friend._id}`}
                       className="text-sm text-blue-500"
                     >
                       ดู
@@ -689,7 +724,7 @@ const Home = () => {
                       >
                         {user.profilePic ? (
                           <img
-                            src={user.profilePic}
+                            src={getImageUrl(user.profilePic)}
                             alt={user.name}
                             className="w-11 h-11 rounded-full object-cover border"
                           />
@@ -702,7 +737,7 @@ const Home = () => {
                         <div className="min-w-0">
                           <p className="font-medium truncate">{user.name}</p>
                           <p className="text-xs text-gray-500 truncate">
-                            ผู้ติดตาม {user.followersCount || 0}
+                            {user.email}
                           </p>
                         </div>
                       </Link>
@@ -710,10 +745,10 @@ const Home = () => {
 
                     <div className="mt-3 flex gap-2">
                       <button
-                        onClick={() => handleToggleFollow(user._id)}
+                        onClick={() => handleSendFriendRequest(user._id)}
                         className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2 rounded-lg"
                       >
-                        Follow
+                        เพิ่มเพื่อน
                       </button>
                       <Link
                         to={`/profile/${user._id}`}
