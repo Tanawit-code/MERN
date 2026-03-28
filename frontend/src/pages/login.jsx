@@ -108,7 +108,9 @@ const LoginPage = () => {
         if (data.success) {
           setIsLoggedIn(true);
           await getUserData?.();
-          toast.success(data.message || "สมัครสมาชิกสำเร็จ");
+
+          toast.success("สมัครสมาชิกสำเร็จ และจำลองส่งอีเมลแล้ว");
+
           resetForm();
           navigate("/");
           return;
@@ -130,7 +132,8 @@ const LoginPage = () => {
       if (data.success) {
         setIsLoggedIn(true);
         await getUserData?.();
-        toast.success(data.message || "เข้าสู่ระบบสำเร็จ");
+        toast.success(data.message || "สมัครสมาชิกสำเร็จ");
+        resetForm();
         navigate("/");
         return;
       }
