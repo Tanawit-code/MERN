@@ -86,33 +86,22 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verifyToken = crypto.randomBytes(32).toString("hex");
 
     const user = await userModel.create({
       name,
       email,
       password: hashedPassword,
-      verificationToken: verifyToken,
-      verificationTokenExpire: Date.now() + 60 * 60 * 1000,
-      isVerified: false,
+      verificationToken: "",
+      verificationTokenExpire: 0,
+      isVerified: true,
     });
 
-    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:5000"
-      }/api/auth/verify-email?token=${verifyToken}`;
-
-    try {
-      await sendEmail(user.email, verifyUrl);
-    } catch (emailError) {
-      console.error("SEND EMAIL ERROR FULL:", emailError);
-      return res.status(500).json({
-        success: false,
-        message: "สมัครสำเร็จแต่ส่งอีเมลยืนยันไม่สำเร็จ",
-      });
-    }
+    const token = createToken(user._id);
+    res.cookie("token", token, cookieOptions);
 
     return res.status(201).json({
       success: true,
-      message: "สมัครสมาชิกสำเร็จ กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี",
+      message: "สมัครสมาชิกสำเร็จ",
       user: {
         _id: user._id,
         name: user.name,
