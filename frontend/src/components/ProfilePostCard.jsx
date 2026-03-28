@@ -1,6 +1,7 @@
 import React from "react";
+import { getImageUrl } from "../config/api";
 
-const API_BASE = "http://localhost:5000";
+
 
 const getImageUrl = (path) => {
     if (!path) return "https://via.placeholder.com/40";

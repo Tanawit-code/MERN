@@ -4,6 +4,7 @@ import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
 import FriendsList from "./FriendsList";
 import { Link } from "react-router-dom";
+import { API_URL } from "../config/api";
 
 const Member = () => {
 
@@ -32,7 +33,7 @@ const Member = () => {
     // ✅ โหลดโพสต์
     const fetchPosts = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/posts/all");
+            const res = await fetch(`${API_URL}/posts/all`);
             const data = await res.json();
 
             if (data.success) {
@@ -56,7 +57,7 @@ const Member = () => {
         setLoadingPost(true);
 
         try {
-            const res = await fetch("http://localhost:5000/api/posts/create", {
+            const res = await fetch(`${API_URL}/posts/create`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -87,7 +88,7 @@ const Member = () => {
     //ลบ post
     const handleDeletePost = async (postId) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/posts/${postId}`, {
+            const res = await fetch(`${API_URL}/posts/${postId}`, {
                 method: "DELETE"
             });
 
@@ -102,7 +103,7 @@ const Member = () => {
     };
     const handleLike = async (postId) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/posts/like/${postId}`, {
+            const res = await fetch(`${API_URL}/posts/like/${postId}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -129,7 +130,7 @@ const Member = () => {
         if (!text || !text.trim()) return;
 
         try {
-            const res = await fetch(`http://localhost:5000/api/posts/comment/${postId}`, {
+            const res = await fetch(`${API_URL}/posts/comment/${postId}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -160,7 +161,7 @@ const Member = () => {
     //ลบเม้น
     const handleDeleteComment = async (postId, commentId) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/posts/comment/${postId}/${commentId}`, {
+            const res = await fetch(`${API_URL}/posts/comment/${postId}/${commentId}`, {
                 method: "DELETE"
             });
 

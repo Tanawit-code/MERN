@@ -23,7 +23,7 @@ const handleResponse = async (res) => {
 };
 
 export const getGroups = async () => {
-    const res = await fetch(API_URL, {
+    const res = await fetch(GROUP_API_URL, {
         method: "GET",
         credentials: "include",
     });
@@ -31,7 +31,7 @@ export const getGroups = async () => {
 };
 
 export const getGroupById = async (groupId) => {
-    const res = await fetch(`${API_URL}/${groupId}`, {
+    const res = await fetch(`${GROUP_API_URL}/${groupId}`, {
         method: "GET",
         credentials: "include",
     });
@@ -39,7 +39,7 @@ export const getGroupById = async (groupId) => {
 };
 
 export const createGroup = async (formData) => {
-    const res = await fetch(API_URL, {
+    const res = await fetch(GROUP_API_URL, {
         method: "POST",
         credentials: "include",
         body: formData,
@@ -48,7 +48,7 @@ export const createGroup = async (formData) => {
 };
 
 export const updateGroup = async (groupId, formData) => {
-    const res = await fetch(`${API_URL}/${groupId}`, {
+    const res = await fetch(`${GROUP_API_URL}/${groupId}`, {
         method: "PUT",
         credentials: "include",
         body: formData,
@@ -57,7 +57,7 @@ export const updateGroup = async (groupId, formData) => {
 };
 
 export const deleteGroup = async (groupId) => {
-    const res = await fetch(`${API_URL}/${groupId}`, {
+    const res = await fetch(`${GROUP_API_URL}/${groupId}`, {
         method: "DELETE",
         credentials: "include",
     });
@@ -65,7 +65,7 @@ export const deleteGroup = async (groupId) => {
 };
 
 export const joinGroup = async (groupId) => {
-    const res = await fetch(`${API_URL}/${groupId}/join`, {
+    const res = await fetch(`${GROUP_API_URL}/${groupId}/join`, {
         method: "POST",
         credentials: "include",
     });
@@ -73,7 +73,7 @@ export const joinGroup = async (groupId) => {
 };
 
 export const leaveGroup = async (groupId) => {
-    const res = await fetch(`${API_URL}/${groupId}/leave`, {
+    const res = await fetch(`${GROUP_API_URL}/${groupId}/leave`, {
         method: "POST",
         credentials: "include",
     });
@@ -81,7 +81,7 @@ export const leaveGroup = async (groupId) => {
 };
 
 export const getGroupPosts = async (groupId) => {
-    const res = await fetch(`${API_URL}/${groupId}/posts`, {
+    const res = await fetch(`${GROUP_API_URL}/${groupId}/posts`, {
         method: "GET",
         credentials: "include",
     });

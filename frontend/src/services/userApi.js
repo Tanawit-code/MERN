@@ -7,6 +7,8 @@ const API = axios.create({
 });
 
 export const getMyProfileApi = () => API.get("/me");
-export const updateProfileApi = (formData) => API.put("/me", formData, {
-    headers: { "Content-Type": "multipart/form-data" }
-});
+export const updateProfileApi = (formData) =>
+    axios.put(`${API_URL}/auth/update-profile`, formData, {
+        withCredentials: true,
+        headers: { "Content-Type": "multipart/form-data" },
+    });
