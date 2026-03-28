@@ -3,6 +3,31 @@ import { Link } from "react-router-dom";
 import { getGroups, createGroup, deleteGroup } from "../services/groupApi";
 import Navbar from "../components/Navbar";
 
+const API_BASE = "http://localhost:5000";
+
+const getImageUrl = (path) => {
+    if (!path) return "";
+
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+        return path;
+    }
+
+    if (path.startsWith("data:image") || path.startsWith("data:video")) {
+        return path;
+    }
+
+    if (path.startsWith("/")) {
+        return `${API_BASE}${path}`;
+    }
+
+    return `${API_BASE}/${path}`;
+};
+
+const normalizeGroup = (group) => ({
+    ...group,
+    groupImage: group?.groupImage || group?.coverImage || group?.image || "",
+});
+
 const GroupsPage = () => {
     const [groups, setGroups] = useState([]);
     const [name, setName] = useState("");
@@ -20,10 +45,14 @@ const GroupsPage = () => {
             const data = await getGroups();
 
             if (data.success) {
-                setGroups(data.groups || []);
+                const normalizedGroups = (data.groups || []).map(normalizeGroup);
+                setGroups(normalizedGroups);
+            } else {
+                setGroups([]);
             }
         } catch (error) {
             console.error("โหลดกลุ่มไม่สำเร็จ", error);
+            setGroups([]);
         } finally {
             setLoadingGroups(false);
         }
@@ -31,7 +60,7 @@ const GroupsPage = () => {
 
     const fetchCurrentUser = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/auth/member", {
+            const res = await fetch(`${API_BASE}/api/auth/member`, {
                 credentials: "include",
             });
 
@@ -191,7 +220,7 @@ const GroupsPage = () => {
                                     type="file"
                                     accept="image/*"
                                     onChange={handleImageChange}
-                                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none"
+                                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none cursor-pointer"
                                 />
 
                                 {previewImage && (
@@ -272,9 +301,9 @@ const GroupsPage = () => {
                                                 {group.groupImage ? (
                                                     <>
                                                         <img
-                                                            src={`http://localhost:5000${group.groupImage}`}
+                                                            src={getImageUrl(group.groupImage)}
                                                             alt={group.name}
-                                                            className="w-full h-full object-cover"
+                                                            className="w-full h-full object-cover object-top"
                                                         />
                                                         <div className="absolute inset-0 bg-black/20" />
                                                     </>

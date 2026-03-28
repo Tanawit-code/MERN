@@ -1,198 +1,217 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { AppContext } from "../context/AppContext";
+import React, { useEffect, useMemo, useState, useContext } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import {
-    getGroupById,
-    joinGroup,
-    leaveGroup,
-    getGroupPosts,
-    deleteGroup,
-} from "../services/groupApi";
+import { AppContext } from "../context/AppContext";
+
+const API_BASE = "http://localhost:5000";
+
+const getImageUrl = (path) => {
+    if (!path) return "";
+
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+        return path;
+    }
+
+    if (path.startsWith("data:image") || path.startsWith("data:video")) {
+        return path;
+    }
+
+    if (path.startsWith("/")) {
+        return `${API_BASE}${path}`;
+    }
+
+    return `${API_BASE}/${path}`;
+};
 
 const GroupDetailPage = () => {
     const { groupId } = useParams();
     const navigate = useNavigate();
-    const { userData, isLoggedIn, isLoading } = useContext(AppContext);
+    const { userData } = useContext(AppContext);
 
     const [group, setGroup] = useState(null);
     const [posts, setPosts] = useState([]);
-    const [openMenu, setOpenMenu] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [loadingPost, setLoadingPost] = useState(false);
 
     const [content, setContent] = useState("");
-    const [image, setImage] = useState(null);
-    const [preview, setPreview] = useState(null);
+    const [image, setImage] = useState("");
+    const [video, setVideo] = useState("");
+    const [preview, setPreview] = useState("");
+    const [videoPreview, setVideoPreview] = useState("");
 
-    const [video, setVideo] = useState(null);
-    const [videoPreview, setVideoPreview] = useState(null);
-
-    const [loadingPost, setLoadingPost] = useState(false);
     const [commentInputs, setCommentInputs] = useState({});
+    const [openMenu, setOpenMenu] = useState(null);
 
-    const apiBase = "http://localhost:5000";
-
-    const getImageUrl = (path) => {
-        if (!path) return "";
-
-        if (path.startsWith("http://") || path.startsWith("https://")) return path;
-        if (path.startsWith("data:image") || path.startsWith("data:video")) return path;
-        if (path.startsWith("/uploads")) return `${apiBase}${path}`;
-
-        return `${apiBase}/uploads/${path}`;
-    };
-
-    const getPostAuthor = (post) => {
-        const userObj =
-            typeof post.userId === "object" && post.userId !== null
-                ? post.userId
-                : post.user || post.author || null;
-
-        return {
-            id: userObj?._id || userObj?.id || post.userId || "",
-            name:
-                userObj?.name ||
-                userObj?.fullname ||
-                post.name ||
-                post.fullname ||
-                "Unknown User",
-            profilePic:
-                userObj?.profilePic ||
-                userObj?.avatar ||
-                post.profilePic ||
-                "",
-        };
-    };
-
-    const getCommentAuthor = (comment) => {
-        return {
-            id:
-                comment.userId?._id ||
-                comment.userId?.id ||
-                comment.userId ||
-                "",
-            name:
-                comment.userId?.name ||
-                comment.userId?.fullname ||
-                comment.name ||
-                comment.fullname ||
-                "Unknown User",
-            profilePic:
-                comment.userId?.profilePic ||
-                comment.profilePic ||
-                "",
-        };
-    };
-
-    const fetchGroup = async () => {
-        try {
-            const data = await getGroupById(groupId);
-            if (data.success) {
-                setGroup(data.group);
-            }
-        } catch (err) {
-            console.error("โหลด group ไม่สำเร็จ:", err);
-        }
-    };
-
-    const fetchPosts = async () => {
-        try {
-            const data = await getGroupPosts(groupId);
-            if (data.success) {
-                setPosts(data.posts || []);
-            }
-        } catch (err) {
-            console.error("โหลด post group ไม่สำเร็จ:", err);
-        }
-    };
-
-    useEffect(() => {
-        if (groupId) {
-            fetchGroup();
-            fetchPosts();
-        }
-    }, [groupId]);
-
-    const ownerId = useMemo(() => {
-        return group?.owner?._id || group?.owner?.id || group?.owner || "";
-    }, [group]);
-
-    const isGroupOwner = useMemo(() => {
-        return ownerId === userData?._id;
-    }, [ownerId, userData]);
+    const isOwner = useMemo(() => {
+        if (!group || !userData?._id) return false;
+        const ownerId =
+            typeof group.owner === "object" ? group.owner?._id : group.owner;
+        return ownerId === userData._id;
+    }, [group, userData]);
 
     const isMember = useMemo(() => {
-        return group?.members?.some((member) => {
-            const memberId = member?._id || member?.id || member;
-            return memberId === userData?._id;
+        if (!group || !userData?._id) return false;
+        const members = Array.isArray(group.members) ? group.members : [];
+        return members.some((member) => {
+            const memberId = typeof member === "object" ? member?._id : member;
+            return memberId === userData._id;
         });
     }, [group, userData]);
 
-    const resetPostForm = () => {
-        setContent("");
-        setImage(null);
-        setPreview(null);
-        setVideo(null);
-        setVideoPreview(null);
-    };
+    useEffect(() => {
+        if (groupId) {
+            fetchGroupDetail();
+            fetchGroupPosts();
+        }
+    }, [groupId]);
 
-    const handleJoin = async () => {
+    const fetchGroupDetail = async () => {
         try {
-            const data = await joinGroup(groupId);
+            const res = await fetch(`${API_BASE}/api/groups/${groupId}`, {
+                credentials: "include",
+            });
+            const data = await res.json();
+
             if (data.success) {
-                fetchGroup();
+                setGroup(data.group);
             } else {
-                alert(data.message || "เข้าร่วมกลุ่มไม่สำเร็จ");
+                alert(data.message || "โหลดข้อมูลกลุ่มไม่สำเร็จ");
             }
-        } catch (err) {
-            console.error("JOIN GROUP ERROR:", err);
+        } catch (error) {
+            console.error("FETCH GROUP DETAIL ERROR:", error);
+            alert("เกิดข้อผิดพลาดในการโหลดข้อมูลกลุ่ม");
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleLeave = async () => {
+    const fetchGroupPosts = async () => {
         try {
-            const data = await leaveGroup(groupId);
+            const res = await fetch(`${API_BASE}/api/groups/${groupId}/posts`, {
+                credentials: "include",
+            });
+            const data = await res.json();
+
             if (data.success) {
-                fetchGroup();
-                fetchPosts();
+                setPosts(data.posts || []);
             } else {
-                alert(data.message || "ออกจากกลุ่มไม่สำเร็จ");
+                setPosts([]);
             }
-        } catch (err) {
-            console.error("LEAVE GROUP ERROR:", err);
+        } catch (error) {
+            console.error("FETCH GROUP POSTS ERROR:", error);
+            setPosts([]);
+        }
+    };
+
+    const handleJoinGroup = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/groups/${groupId}/join`, {
+                method: "POST",
+                credentials: "include",
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "เข้าร่วมกลุ่มไม่สำเร็จ");
+            }
+
+            alert(data.message || "เข้าร่วมกลุ่มสำเร็จ");
+            fetchGroupDetail();
+        } catch (error) {
+            console.error("JOIN GROUP ERROR:", error);
+            alert(error.message || "เข้าร่วมกลุ่มไม่สำเร็จ");
+        }
+    };
+
+    const handleLeaveGroup = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/groups/${groupId}/leave`, {
+                method: "POST",
+                credentials: "include",
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "ออกจากกลุ่มไม่สำเร็จ");
+            }
+
+            alert(data.message || "ออกจากกลุ่มสำเร็จ");
+            fetchGroupDetail();
+        } catch (error) {
+            console.error("LEAVE GROUP ERROR:", error);
+            alert(error.message || "ออกจากกลุ่มไม่สำเร็จ");
         }
     };
 
     const handleDeleteGroup = async () => {
-        const ok = window.confirm("ต้องการลบกลุ่มนี้ใช่ไหม? การลบจะไม่สามารถกู้คืนได้");
-        if (!ok) return;
+        const confirmed = window.confirm("ต้องการลบกลุ่มนี้ใช่หรือไม่?");
+        if (!confirmed) return;
 
         try {
-            const data = await deleteGroup(groupId);
-            if (data.success) {
-                alert("ลบกลุ่มสำเร็จ");
-                navigate("/groups");
-            } else {
-                alert(data.message || "ลบกลุ่มไม่สำเร็จ");
+            const res = await fetch(`${API_BASE}/api/groups/${groupId}`, {
+                method: "DELETE",
+                credentials: "include",
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "ลบกลุ่มไม่สำเร็จ");
             }
+
+            alert(data.message || "ลบกลุ่มสำเร็จ");
+            navigate("/groups");
         } catch (error) {
             console.error("DELETE GROUP ERROR:", error);
-            alert(error.message || "เกิดข้อผิดพลาด");
+            alert(error.message || "ลบกลุ่มไม่สำเร็จ");
         }
     };
 
-    const handleCreatePost = async () => {
-        if ((!content.trim() && !image && !video) || loadingPost) return;
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-        setLoadingPost(true);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImage(reader.result);
+            setPreview(reader.result);
+            setVideo("");
+            setVideoPreview("");
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleVideoChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setVideo(reader.result);
+            setVideoPreview(reader.result);
+            setImage("");
+            setPreview("");
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleCreatePost = async () => {
+        if (!content.trim() && !image && !video) {
+            return alert("กรุณาใส่ข้อความ รูป หรือวิดีโอ");
+        }
 
         try {
-            const res = await fetch(`${apiBase}/api/posts/create`, {
+            setLoadingPost(true);
+
+            const res = await fetch(`${API_BASE}/api/posts/create`, {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                credentials: "include",
                 body: JSON.stringify({
+                    userId: userData?._id,
+                    name: userData?.name || "",
+                    profilePic: userData?.profilePic || "",
                     content,
                     image,
                     video,
@@ -202,43 +221,78 @@ const GroupDetailPage = () => {
 
             const data = await res.json();
 
-            if (data.success) {
-                resetPostForm();
-                fetchPosts();
-            } else {
-                alert(data.message || "โพสต์ไม่สำเร็จ");
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || "สร้างโพสต์ไม่สำเร็จ");
             }
-        } catch (err) {
-            console.error("CREATE GROUP POST ERROR:", err);
+
+            setContent("");
+            setImage("");
+            setVideo("");
+            setPreview("");
+            setVideoPreview("");
+
+            await fetchGroupPosts();
+            await fetchGroupDetail();
+            alert("โพสต์สำเร็จ");
+        } catch (error) {
+            console.error("CREATE GROUP POST ERROR:", error);
+            alert(error.message || "สร้างโพสต์ไม่สำเร็จ");
         } finally {
             setLoadingPost(false);
         }
     };
 
-    const handleDeletePost = async (postId) => {
+    const handleLikePost = async (postId) => {
         try {
-            const res = await fetch(`${apiBase}/api/posts/${postId}`, {
-                method: "DELETE",
+            const res = await fetch(`${API_BASE}/api/posts/like/${postId}`, {
+                method: "POST",
                 credentials: "include",
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                fetchGroupPosts();
+            }
+        } catch (error) {
+            console.error("LIKE POST ERROR:", error);
+        }
+    };
+
+    const handleAddComment = async (postId) => {
+        const text = commentInputs[postId];
+        if (!text || !text.trim()) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/posts/comment/${postId}`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ text }),
             });
 
             const data = await res.json();
 
             if (data.success) {
-                setPosts((prev) => prev.filter((post) => post._id !== postId));
-                setOpenMenu(null);
-            } else {
-                alert(data.message || "ลบโพสต์ไม่สำเร็จ");
+                setCommentInputs((prev) => ({
+                    ...prev,
+                    [postId]: "",
+                }));
+
+                setPosts((prev) =>
+                    prev.map((post) => (post._id === postId ? data.post : post))
+                );
             }
-        } catch (err) {
-            console.error("DELETE GROUP POST ERROR:", err);
+        } catch (error) {
+            console.error("ADD COMMENT ERROR:", error);
         }
     };
 
     const handleDeleteComment = async (postId, commentId) => {
         try {
             const res = await fetch(
-                `${apiBase}/api/posts/comment/${postId}/${commentId}`,
+                `${API_BASE}/api/posts/comment/${postId}/${commentId}`,
                 {
                     method: "DELETE",
                     credentials: "include",
@@ -251,147 +305,75 @@ const GroupDetailPage = () => {
                 setPosts((prev) =>
                     prev.map((post) => (post._id === postId ? data.post : post))
                 );
-                setOpenMenu(null);
             } else {
                 alert(data.message || "ลบคอมเมนต์ไม่สำเร็จ");
             }
         } catch (error) {
             console.error("DELETE COMMENT ERROR:", error);
+            alert("ลบคอมเมนต์ไม่สำเร็จ");
         }
     };
 
-    const handleLikePost = async (postId) => {
+    const handleDeletePost = async (postId) => {
+        const confirmed = window.confirm("ต้องการลบโพสต์นี้ใช่หรือไม่?");
+        if (!confirmed) return;
+
         try {
-            const res = await fetch(`${apiBase}/api/posts/like/${postId}`, {
-                method: "POST",
+            const res = await fetch(`${API_BASE}/api/posts/${postId}`, {
+                method: "DELETE",
                 credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({}),
             });
 
             const data = await res.json();
 
             if (data.success) {
-                setPosts((prev) =>
-                    prev.map((post) => (post._id === postId ? data.post : post))
-                );
+                setPosts((prev) => prev.filter((post) => post._id !== postId));
             } else {
-                alert(data.message || "ไลก์ไม่สำเร็จ");
+                alert(data.message || "ลบโพสต์ไม่สำเร็จ");
             }
         } catch (error) {
-            console.error("LIKE ERROR:", error);
+            console.error("DELETE POST ERROR:", error);
+            alert("ลบโพสต์ไม่สำเร็จ");
         }
     };
 
-    const handleAddComment = async (postId) => {
-        const text = commentInputs[postId];
-        if (!text || !text.trim()) return;
-
-        try {
-            const res = await fetch(`${apiBase}/api/posts/comment/${postId}`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ text }),
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                setPosts((prev) =>
-                    prev.map((post) => (post._id === postId ? data.post : post))
-                );
-
-                setCommentInputs((prev) => ({
-                    ...prev,
-                    [postId]: "",
-                }));
-            } else {
-                alert(data.message || "คอมเมนต์ไม่สำเร็จ");
-            }
-        } catch (error) {
-            console.error("COMMENT ERROR:", error);
-        }
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.size > 5 * 1024 * 1024) {
-            alert("รูปใหญ่เกิน 5MB");
-            return;
+    const getPostAuthor = (post) => {
+        if (post.userId && typeof post.userId === "object") {
+            return {
+                id: post.userId._id || "",
+                name: post.userId.name || post.name || "Unknown User",
+                profilePic: post.userId.profilePic || post.profilePic || "",
+            };
         }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setImage(reader.result);
-            setPreview(reader.result);
+        return {
+            id: post.userId || "",
+            name: post.name || "Unknown User",
+            profilePic: post.profilePic || "",
         };
-        reader.readAsDataURL(file);
     };
 
-    const handleVideoChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (file.size > 20 * 1024 * 1024) {
-            alert("วิดีโอใหญ่เกิน 20MB");
-            return;
+    const getCommentAuthor = (comment) => {
+        if (comment.userId && typeof comment.userId === "object") {
+            return {
+                id: comment.userId._id || "",
+                name: comment.userId.name || comment.name || "Unknown User",
+                profilePic: comment.userId.profilePic || comment.profilePic || "",
+            };
         }
 
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setVideo(reader.result);
-            setVideoPreview(reader.result);
+        return {
+            id: comment.userId || "",
+            name: comment.name || "Unknown User",
+            profilePic: comment.profilePic || "",
         };
-        reader.readAsDataURL(file);
     };
 
-    const renderProfileImage = (user, fallback = "U") => {
-        if (user?.profilePic) {
-            return (
-                <img
-                    src={`http://localhost:5000/${user.profilePic}`}
-                    alt="profile"
-                    className="w-full h-full object-cover"
-                />
-            );
-        }
-
-        return user?.name?.charAt(0).toUpperCase() || fallback;
-    };
-
-    if (isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <p className="text-lg font-semibold animate-pulse">กำลังโหลด...</p>
-            </div>
-        );
-    }
-
-    if (!isLoggedIn) {
+    if (loading) {
         return (
             <div className="min-h-screen bg-gray-100">
                 <Navbar />
-                <div className="max-w-3xl mx-auto px-6 py-16">
-                    <div className="bg-white rounded-2xl shadow p-8 text-center">
-                        <h1 className="text-3xl font-bold mb-4">กรุณาเข้าสู่ระบบ</h1>
-                        <p className="text-gray-600 mb-6">
-                            ต้องเข้าสู่ระบบก่อนจึงจะใช้งานกลุ่มได้
-                        </p>
-                        <Link
-                            to="/login"
-                            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
-                        >
-                            ไปหน้า Login
-                        </Link>
-                    </div>
-                </div>
+                <div className="max-w-6xl mx-auto px-4 py-6">กำลังโหลดข้อมูลกลุ่ม...</div>
             </div>
         );
     }
@@ -400,332 +382,307 @@ const GroupDetailPage = () => {
         return (
             <div className="min-h-screen bg-gray-100">
                 <Navbar />
-                <div className="pt-20 text-center">กำลังโหลดข้อมูลกลุ่ม...</div>
+                <div className="max-w-6xl mx-auto px-4 py-6">ไม่พบข้อมูลกลุ่ม</div>
             </div>
         );
     }
 
     return (
-        <div className="bg-gray-100 min-h-screen">
+        <div className="min-h-screen bg-gray-100">
             <Navbar />
 
-            <div className="max-w-7xl mx-auto pt-20 px-4">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div className="hidden md:block lg:col-span-1">
-                        <div className="bg-white p-4 rounded-2xl shadow">
-                            <p className="font-semibold">เมนู</p>
+            <div className="max-w-6xl mx-auto px-4 py-6">
+                <div className="bg-white rounded-3xl shadow overflow-hidden mb-6">
+                    <div className="h-56 bg-gradient-to-r from-blue-500 via-sky-400 to-cyan-300 relative">
+                        {group.groupImage && (
+                            <img
+                                src={getImageUrl(group.groupImage)}
+                                alt={group.name}
+                                className="w-full h-full object-cover object-center"
+                            />
+                        )}
+                    </div>
 
-                            <div className="mt-2 space-y-2 flex flex-col">
-                                <Link
-                                    to="/groups"
-                                    className="hover:bg-gray-100 p-2 rounded cursor-pointer"
-                                >
-                                    👥 กลุ่มทั้งหมด
-                                </Link>
-                                <Link
-                                    to="/"
-                                    className="hover:bg-gray-100 p-2 rounded cursor-pointer"
-                                >
-                                    🏠 กลับหน้า Home
-                                </Link>
+                    <div className="px-6 py-6">
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-800">{group.name}</h1>
+                                <p className="text-gray-600 mt-2">
+                                    {group.description || "ยังไม่มีคำอธิบายกลุ่ม"}
+                                </p>
+                                <p className="text-sm text-gray-500 mt-3">
+                                    สมาชิก {Array.isArray(group.members) ? group.members.length : 0} คน
+                                </p>
+                            </div>
+
+                            <div className="flex flex-wrap gap-3">
+                                {isOwner ? (
+                                    <>
+                                        <Link
+                                            to={`/groups/edit/${group._id}`}
+                                            className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-xl"
+                                        >
+                                            แก้ไขกลุ่ม
+                                        </Link>
+
+                                        <button
+                                            onClick={handleDeleteGroup}
+                                            className="bg-red-500 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl cursor-pointer"
+                                        >
+                                            ลบกลุ่ม
+                                        </button>
+                                    </>
+                                ) : isMember ? (
+                                    <button
+                                        onClick={handleLeaveGroup}
+                                        className="bg-gray-700 hover:bg-gray-800 text-white px-5 py-2.5 rounded-xl cursor-pointer"
+                                    >
+                                        ออกจากกลุ่ม
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleJoinGroup}
+                                        className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl cursor-pointer"
+                                    >
+                                        เข้าร่วมกลุ่ม
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div className="w-full lg:col-span-2">
-                        <div className="bg-white rounded-2xl shadow overflow-hidden mb-4">
-                            <div className="relative h-56 bg-gray-200">
-                                {group.groupImage ? (
-                                    <>
-                                        <img
-                                            src={getImageUrl(group.groupImage)}
-                                            alt={group.name}
-                                            className="w-full h-full object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/25" />
-                                    </>
-                                ) : (
-                                    <div className="w-full h-full bg-gradient-to-r from-blue-500 to-indigo-500" />
-                                )}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2">
+                        {isMember && (
+                            <div className="bg-white rounded-2xl shadow p-4 mb-6">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <Link to="/profilepage">
+                                        {userData?.profilePic ? (
+                                            <img
+                                                src={getImageUrl(userData.profilePic)}
+                                                alt={userData?.name}
+                                                className="w-12 h-12 rounded-full object-cover border"
+                                            />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                                                {userData?.name?.charAt(0)?.toUpperCase() || "U"}
+                                            </div>
+                                        )}
+                                    </Link>
 
-                                <div className="absolute inset-x-0 bottom-0 p-5">
-                                    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                                        <div className="text-white">
-                                            <h1 className="text-3xl md:text-4xl font-bold drop-shadow">
-                                                {group.name}
-                                            </h1>
+                                    <textarea
+                                        value={content}
+                                        onChange={(e) => setContent(e.target.value)}
+                                        rows="1"
+                                        placeholder="คุณกำลังคิดอะไรอยู่..."
+                                        className="flex-1 bg-gray-100 rounded-full px-5 py-4 text-lg outline-none resize-none min-h-[56px] max-h-40"
+                                    />
+                                </div>
 
-                                            <p className="text-white/90 mt-1 drop-shadow max-w-2xl">
-                                                {group.description || "ยังไม่มีรายละเอียดกลุ่ม"}
-                                            </p>
-
-                                            <p className="text-sm text-white/80 mt-2 drop-shadow">
-                                                สมาชิก {group.members?.length || 0} คน
-                                            </p>
-                                        </div>
-
-                                        {isGroupOwner && (
-                                            <div className="flex gap-2">
-                                                <Link
-                                                    to={`/groups/edit/${group._id}`}
-                                                    className="backdrop-blur-md bg-white/20 hover:bg-white/30 text-white border border-white/30 px-4 py-2.5 rounded-xl font-medium transition shadow-lg"
-                                                >
-                                                    ✏️ แก้ไขกลุ่ม
-                                                </Link>
-
+                                {(preview || videoPreview) && (
+                                    <div className="mb-4 space-y-3">
+                                        {preview && (
+                                            <div className="relative">
+                                                <img
+                                                    src={preview}
+                                                    alt="preview"
+                                                    className="w-full max-h-80 object-cover rounded-2xl border"
+                                                />
                                                 <button
-                                                    onClick={handleDeleteGroup}
-                                                    className="backdrop-blur-md bg-red-500/80 hover:bg-red-600 text-white border border-white/20 px-4 py-2.5 rounded-xl font-medium transition shadow-lg cursor-pointer"
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setImage("");
+                                                        setPreview("");
+                                                    }}
+                                                    className="absolute top-2 right-2 bg-black/60 text-white px-3 py-1 rounded-full text-sm"
                                                 >
-                                                    🗑 ลบกลุ่ม
+                                                    ลบรูป
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {videoPreview && (
+                                            <div className="relative">
+                                                <video
+                                                    src={videoPreview}
+                                                    controls
+                                                    className="w-full max-h-80 rounded-2xl border bg-black"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setVideo("");
+                                                        setVideoPreview("");
+                                                    }}
+                                                    className="absolute top-2 right-2 bg-black/60 text-white px-3 py-1 rounded-full text-sm"
+                                                >
+                                                    ลบวิดีโอ
                                                 </button>
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            </div>
+                                )}
 
-                            <div className="p-4 flex flex-wrap items-center justify-between gap-3">
-                                <div className="text-sm text-gray-500">
-                                    เจ้าของกลุ่ม:{" "}
-                                    <span className="font-medium text-gray-800">
-                                        {group.owner?.name || "-"}
-                                    </span>
-                                </div>
-
-                                <div className="flex flex-wrap gap-2">
-                                    {isMember ? (
-                                        !isGroupOwner && (
-                                            <button
-                                                onClick={handleLeave}
-                                                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 cursor-pointer"
-                                            >
-                                                ออกจากกลุ่ม
-                                            </button>
-                                        )
-                                    ) : (
-                                        <button
-                                            onClick={handleJoin}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 cursor-pointer"
-                                        >
-                                            เข้าร่วมกลุ่ม
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {isMember && (
-                            <div className="bg-white p-4 rounded-2xl shadow mb-4">
-                                <div className="flex gap-3 items-center">
-                                    <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
-                                        {renderProfileImage(userData, "U")}
-                                    </div>
-
-                                    <input
-                                        type="text"
-                                        value={content}
-                                        onChange={(e) => setContent(e.target.value)}
-                                        onKeyDown={(e) => e.key === "Enter" && handleCreatePost()}
-                                        placeholder="โพสต์อะไรในกลุ่มนี้..."
-                                        className="w-full bg-gray-100 rounded-full px-4 py-2 outline-none"
-                                    />
-                                </div>
-
-                                <div className="mt-3 flex items-center gap-3 flex-wrap">
-                                    <label className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer">
-                                        📷 เพิ่มรูป
+                                <div className="flex flex-wrap gap-3">
+                                    <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-black font-semibold text-[18px] px-6 py-3 rounded-2xl transition">
+                                        เพิ่มรูป
                                         <input
                                             type="file"
                                             accept="image/*"
-                                            className="hidden"
                                             onChange={handleImageChange}
+                                            className="hidden"
                                         />
                                     </label>
 
-                                    <label className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer">
-                                        🎥 เพิ่มวิดีโอ
+                                    <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-black font-semibold text-[18px] px-6 py-3 rounded-2xl transition">
+                                        เพิ่มวิดีโอ
                                         <input
                                             type="file"
                                             accept="video/*"
-                                            className="hidden"
                                             onChange={handleVideoChange}
+                                            className="hidden"
                                         />
                                     </label>
 
                                     <button
+                                        type="button"
                                         onClick={handleCreatePost}
                                         disabled={loadingPost}
-                                        className="bg-blue-800 text-white px-4 py-2 rounded disabled:opacity-50 cursor-pointer"
+                                        className="bg-blue-500 hover:bg-blue-600 text-white font-semibold text-[18px] px-8 py-3 rounded-2xl transition disabled:opacity-70"
                                     >
                                         {loadingPost ? "กำลังโพสต์..." : "โพสต์"}
                                     </button>
                                 </div>
-
-                                {preview && (
-                                    <div className="mt-3">
-                                        <img
-                                            src={preview}
-                                            alt="preview"
-                                            className="rounded-xl max-h-60 object-cover border"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                setImage(null);
-                                                setPreview(null);
-                                            }}
-                                            className="text-red-500 text-xs mt-2 cursor-pointer"
-                                        >
-                                            ลบรูป
-                                        </button>
-                                    </div>
-                                )}
-
-                                {videoPreview && (
-                                    <div className="mt-3">
-                                        <video
-                                            src={videoPreview}
-                                            controls
-                                            className="rounded-xl max-h-60 object-cover border"
-                                        />
-                                        <button
-                                            onClick={() => {
-                                                setVideo(null);
-                                                setVideoPreview(null);
-                                            }}
-                                            className="text-red-500 text-xs mt-2 cursor-pointer"
-                                        >
-                                            ลบวิดีโอ
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         )}
 
                         {!isMember && (
-                            <div className="bg-white p-4 rounded-2xl shadow mb-4 text-gray-600">
-                                เข้าร่วมกลุ่มก่อน จึงจะสามารถโพสต์ในกลุ่มได้
+                            <div className="bg-white rounded-2xl shadow p-6 mb-6 text-gray-600">
+                                ต้องเข้าร่วมกลุ่มก่อน จึงจะสามารถโพสต์ได้
                             </div>
                         )}
 
-                        {posts.map((post) => {
-                            const author = getPostAuthor(post);
+                        <h2 className="text-xl font-bold text-gray-800 mb-4">
+                            โพสต์ในกลุ่ม
+                        </h2>
 
-                            const isLiked = post.likes?.some(
-                                (id) =>
-                                    id === userData?._id ||
-                                    id?._id === userData?._id ||
-                                    id?.toString?.() === userData?._id
-                            );
+                        {posts.length === 0 ? (
+                            <div className="bg-white rounded-2xl shadow p-6 text-gray-500">
+                                ยังไม่มีโพสต์ในกลุ่ม
+                            </div>
+                        ) : (
+                            posts.map((post) => {
+                                const author = getPostAuthor(post);
 
-                            const isOwner =
-                                author.id === userData?._id ||
-                                post.userId === userData?._id;
+                                const isLiked = (post.likes || []).some((id) => {
+                                    if (!id) return false;
+                                    if (typeof id === "object") return id._id === userData?._id;
+                                    return id.toString() === userData?._id;
+                                });
 
-                            return (
-                                <div
-                                    key={post._id}
-                                    className="bg-white p-4 rounded-2xl shadow mb-4"
-                                >
-                                    <div className="relative">
-                                        {isOwner && (
-                                            <div className="absolute top-0 right-0">
-                                                <button
-                                                    onClick={() =>
-                                                        setOpenMenu(openMenu === post._id ? null : post._id)
-                                                    }
-                                                    className="text-gray-500 hover:text-black cursor-pointer"
-                                                >
-                                                    ⋯
-                                                </button>
+                                const isPostOwner =
+                                    author.id === userData?._id ||
+                                    post.userId === userData?._id;
 
-                                                {openMenu === post._id && (
-                                                    <div className="absolute right-0 mt-1 bg-white border rounded shadow z-10">
-                                                        <button
-                                                            onClick={() => handleDeletePost(post._id)}
-                                                            className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left cursor-pointer"
-                                                        >
-                                                            ลบโพสต์
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-500 flex items-center justify-center text-white font-bold">
-                                            <Link
-                                                to={`/profile/${author.id}`}
-                                                className="flex items-center gap-3 mb-2 hover:opacity-80"
-                                            >
-
-                                                {author.profilePic ? (
-                                                    <img
-                                                        src={`http://localhost:5000/${author.profilePic}`}
-                                                        alt={author.name}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    author.name?.charAt(0).toUpperCase() || "U"
-                                                )}
-
+                                return (
+                                    <div
+                                        key={post._id}
+                                        className="bg-white rounded-2xl shadow p-4 mb-4"
+                                    >
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex gap-3 items-center">
+                                                <Link to={`/profile/${author.id}`}>
+                                                    {author.profilePic ? (
+                                                        <img
+                                                            src={getImageUrl(author.profilePic)}
+                                                            alt={author.name}
+                                                            className="w-12 h-12 rounded-full object-cover border"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
+                                                            {author.name?.charAt(0)?.toUpperCase() || "U"}
+                                                        </div>
+                                                    )}
+                                                </Link>
 
                                                 <div>
-                                                    <p className="font-semibold">{author.name}</p>
-                                                    <p className="text-xs text-gray-400">
-                                                        {new Date(post.createdAt).toLocaleString()}
+                                                    <Link
+                                                        to={`/profile/${author.id}`}
+                                                        className="font-semibold text-gray-800 hover:text-blue-600"
+                                                    >
+                                                        {author.name}
+                                                    </Link>
+                                                    <p className="text-xs text-gray-500">
+                                                        {post.createdAt
+                                                            ? new Date(post.createdAt).toLocaleString()
+                                                            : ""}
                                                     </p>
                                                 </div>
-                                            </Link>
+                                            </div>
+
+                                            {isPostOwner && (
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() =>
+                                                            setOpenMenu(
+                                                                openMenu === post._id ? null : post._id
+                                                            )
+                                                        }
+                                                        className="text-gray-500 hover:text-black cursor-pointer px-2"
+                                                    >
+                                                        ⋯
+                                                    </button>
+
+                                                    {openMenu === post._id && (
+                                                        <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow z-10 min-w-[120px]">
+                                                            <button
+                                                                onClick={() => handleDeletePost(post._id)}
+                                                                className="block px-3 py-2 text-red-500 hover:bg-gray-100 w-full text-left"
+                                                            >
+                                                                ลบโพสต์
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
 
-                                        <div>
-                                            <p className="font-semibold">{author.name}</p>
-                                            <p className="text-xs text-gray-400">
-                                                {new Date(post.createdAt).toLocaleString()}
+                                        {post.content && (
+                                            <p className="mt-4 text-gray-800 whitespace-pre-wrap">
+                                                {post.content}
                                             </p>
-                                        </div>
-                                    </div>
+                                        )}
 
-                                    {post.content && (
-                                        <p className="mt-2 text-gray-700 whitespace-pre-wrap">
-                                            {post.content}
-                                        </p>
-                                    )}
+                                        {post.image && (
+                                            <img
+                                                src={getImageUrl(post.image)}
+                                                alt="post"
+                                                className="mt-4 w-full rounded-xl max-h-[500px] object-cover border"
+                                            />
+                                        )}
 
-                                    {post.image && (
-                                        <img
-                                            src={getImageUrl(post.image)}
-                                            alt="post"
-                                            className="rounded-xl max-h-100 object-cover border"
-                                        />
-                                    )}
+                                        {post.video && (
+                                            <video
+                                                src={getImageUrl(post.video)}
+                                                controls
+                                                className="mt-4 w-full rounded-xl max-h-[500px] border bg-black"
+                                            />
+                                        )}
 
-                                    {post.video && (
-                                        <video
-                                            src={getImageUrl(post.video)}
-                                            controls
-                                            className="rounded-xl max-h-100 object-cover border"
-                                        />
-                                    )}
-
-                                    <div className="mt-3 border-t pt-3">
-                                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                                        <div className="mt-4 flex items-center gap-6 text-sm text-gray-600 border-t pt-3">
                                             <button
                                                 onClick={() => handleLikePost(post._id)}
                                                 className={`hover:text-blue-600 cursor-pointer ${isLiked ? "text-blue-600 font-semibold" : ""
                                                     }`}
                                             >
-                                                👍 ถูกใจ {post.likes?.length || 0}
+                                                ถูกใจ {post.likes?.length || 0}
                                             </button>
-
-                                            <span>💬 ความคิดเห็น {post.comments?.length || 0}</span>
+                                            <div>ความคิดเห็น {post.comments?.length || 0}</div>
                                         </div>
 
-                                        <div className="flex gap-2 mb-3">
+                                        <div className="mt-3 flex gap-2">
                                             <input
-                                                type="text"
                                                 value={commentInputs[post._id] || ""}
                                                 onChange={(e) =>
                                                     setCommentInputs((prev) => ({
@@ -736,108 +693,150 @@ const GroupDetailPage = () => {
                                                 onKeyDown={(e) =>
                                                     e.key === "Enter" && handleAddComment(post._id)
                                                 }
+                                                className="flex-1 border rounded px-3 py-2"
                                                 placeholder="เขียนความคิดเห็น..."
-                                                className="flex-1 border rounded px-3 py-1"
                                             />
                                             <button
                                                 onClick={() => handleAddComment(post._id)}
-                                                className="bg-blue-500 text-white px-4 py-2 rounded-full cursor-pointer"
+                                                className="bg-blue-500 text-white px-4 rounded cursor-pointer"
                                             >
                                                 ส่ง
                                             </button>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            {post.comments?.map((comment) => {
-                                                const commentAuthor = getCommentAuthor(comment);
+                                        <div className="mt-4 space-y-3">
+                                            {(Array.isArray(post.comments) ? post.comments : []).map(
+                                                (comment) => {
+                                                    const commentAuthor = getCommentAuthor(comment);
 
-                                                const isCommentOwner =
-                                                    commentAuthor.id === userData?._id ||
-                                                    comment.userId === userData?._id;
+                                                    const isCommentOwner =
+                                                        commentAuthor.id === userData?._id ||
+                                                        comment.userId === userData?._id;
 
-                                                return (
-                                                    <div
-                                                        key={comment._id}
-                                                        className="flex gap-2 items-start relative"
-                                                    >
-                                                        <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-500 text-white flex items-center justify-center text-sm font-bold">
-                                                            {commentAuthor.profilePic ? (
-                                                                <img
-                                                                    src={`http://localhost:5000/${commentAuthor.profilePic}`}
-                                                                    alt={commentAuthor.name}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            ) : (
-                                                                commentAuthor.name?.charAt(0).toUpperCase() || "U"
-                                                            )}
-                                                        </div>
-
-                                                        <div className="bg-gray-100 rounded-xl px-3 py-2 relative flex-1">
-                                                            {isCommentOwner && (
-                                                                <div className="absolute top-2 right-2">
-                                                                    <button
-                                                                        onClick={() =>
-                                                                            setOpenMenu(
-                                                                                openMenu === comment._id
-                                                                                    ? null
-                                                                                    : comment._id
-                                                                            )
-                                                                        }
-                                                                        className="text-gray-500 hover:text-black cursor-pointer"
+                                                    return (
+                                                        <div
+                                                            key={comment._id}
+                                                            className="bg-gray-50 rounded-xl p-3"
+                                                        >
+                                                            <div className="flex justify-between items-start gap-3">
+                                                                <div className="flex gap-3">
+                                                                    <Link
+                                                                        to={`/profile/${commentAuthor.id}`}
                                                                     >
-                                                                        ⋯
-                                                                    </button>
+                                                                        {commentAuthor.profilePic ? (
+                                                                            <img
+                                                                                src={getImageUrl(
+                                                                                    commentAuthor.profilePic
+                                                                                )}
+                                                                                alt={commentAuthor.name}
+                                                                                className="w-9 h-9 rounded-full object-cover border"
+                                                                            />
+                                                                        ) : (
+                                                                            <div className="w-9 h-9 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-sm font-semibold">
+                                                                                {commentAuthor.name
+                                                                                    ?.charAt(0)
+                                                                                    ?.toUpperCase() || "U"}
+                                                                            </div>
+                                                                        )}
+                                                                    </Link>
 
-                                                                    {openMenu === comment._id && (
-                                                                        <div className="absolute right-0 mt-1 bg-white border rounded shadow z-10">
-                                                                            <button
-                                                                                onClick={() =>
-                                                                                    handleDeleteComment(
-                                                                                        post._id,
-                                                                                        comment._id
-                                                                                    )
-                                                                                }
-                                                                                className="block px-3 py-1 text-red-500 hover:bg-gray-100 w-full text-left text-xs cursor-pointer"
-                                                                            >
-                                                                                ลบ Comment
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
+                                                                    <div>
+                                                                        <Link
+                                                                            to={`/profile/${commentAuthor.id}`}
+                                                                            className="font-medium text-sm text-gray-800 hover:text-blue-600"
+                                                                        >
+                                                                            {commentAuthor.name}
+                                                                        </Link>
+                                                                        <p className="text-sm text-gray-700">
+                                                                            {comment.text}
+                                                                        </p>
+                                                                        <p className="text-xs text-gray-500 mt-1">
+                                                                            {comment.createdAt
+                                                                                ? new Date(
+                                                                                    comment.createdAt
+                                                                                ).toLocaleString()
+                                                                                : ""}
+                                                                        </p>
+                                                                    </div>
                                                                 </div>
-                                                            )}
 
-                                                            <p className="font-semibold text-sm">
-                                                                {commentAuthor.name}
-                                                            </p>
-                                                            <p className="text-sm text-gray-700">
-                                                                {comment.text}
-                                                            </p>
-                                                            <p className="text-xs text-gray-400 mt-1">
-                                                                {comment.createdAt
-                                                                    ? new Date(comment.createdAt).toLocaleString()
-                                                                    : ""}
-                                                            </p>
+                                                                {isCommentOwner && (
+                                                                    <div className="relative">
+                                                                        <button
+                                                                            onClick={() =>
+                                                                                setOpenMenu(
+                                                                                    openMenu === comment._id
+                                                                                        ? null
+                                                                                        : comment._id
+                                                                                )
+                                                                            }
+                                                                            className="text-gray-500 hover:text-black cursor-pointer px-2"
+                                                                        >
+                                                                            ⋯
+                                                                        </button>
+
+                                                                        {openMenu === comment._id && (
+                                                                            <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow z-10 min-w-[130px]">
+                                                                                <button
+                                                                                    onClick={() =>
+                                                                                        handleDeleteComment(
+                                                                                            post._id,
+                                                                                            comment._id
+                                                                                        )
+                                                                                    }
+                                                                                    className="block px-3 py-2 text-red-500 hover:bg-gray-100 w-full text-left text-xs"
+                                                                                >
+                                                                                    ลบคอมเมนต์
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                );
-                                            })}
+                                                    );
+                                                }
+                                            )}
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })
+                        )}
                     </div>
 
-                    <div className="hidden lg:block lg:col-span-1">
-                        <div className="bg-white p-4 rounded-2xl shadow">
-                            <p className="font-semibold mb-2">ข้อมูลกลุ่ม</p>
-                            <p className="text-sm text-gray-600">ชื่อกลุ่ม: {group.name}</p>
-                            <p className="text-sm text-gray-600">
-                                สมาชิก: {group.members?.length || 0} คน
-                            </p>
-                            <p className="text-sm text-gray-600 mt-2">
-                                เจ้าของ: {group.owner?.name || "-"}
-                            </p>
+                    <div>
+                        <div className="bg-white rounded-3xl shadow p-5 sticky top-6">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4">
+                                ข้อมูลกลุ่ม
+                            </h2>
+
+                            <div className="space-y-3 text-sm text-gray-700">
+                                <div className="bg-gray-50 rounded-2xl p-4">
+                                    <p className="font-semibold text-gray-800">ชื่อกลุ่ม</p>
+                                    <p>{group.name || "-"}</p>
+                                </div>
+
+                                <div className="bg-gray-50 rounded-2xl p-4">
+                                    <p className="font-semibold text-gray-800">คำอธิบาย</p>
+                                    <p>{group.description || "ยังไม่มีข้อมูล"}</p>
+                                </div>
+
+                                <div className="bg-gray-50 rounded-2xl p-4">
+                                    <p className="font-semibold text-gray-800">จำนวนสมาชิก</p>
+                                    <p>{Array.isArray(group.members) ? group.members.length : 0} คน</p>
+                                </div>
+
+                                {group.owner && (
+                                    <div className="bg-gray-50 rounded-2xl p-4">
+                                        <p className="font-semibold text-gray-800">เจ้าของกลุ่ม</p>
+                                        <p>
+                                            {typeof group.owner === "object"
+                                                ? group.owner?.name || "-"
+                                                : "-"}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

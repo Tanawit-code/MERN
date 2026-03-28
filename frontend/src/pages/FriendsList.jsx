@@ -11,14 +11,20 @@ const API_BASE = "http://localhost:5000";
 const getImageUrl = (path) => {
     if (!path) return "";
 
-    if (path.startsWith("http://") || path.startsWith("https://")) {
+    // ถ้าเป็น full URL
+    if (path.startsWith("http")) return path;
+
+    // ถ้าเป็น base64
+    if (path.startsWith("data:image") || path.startsWith("data:video")) {
         return path;
     }
 
-    if (path.startsWith("/uploads")) {
-        return `${API_BASE}${path}`;
+    // ถ้ามี uploads อยู่แล้ว
+    if (path.includes("uploads")) {
+        return `${API_BASE}/${path}`;
     }
 
+    // default
     return `${API_BASE}/uploads/${path}`;
 };
 
@@ -116,7 +122,7 @@ function FriendsList() {
                                     >
                                         {friend.profilePic ? (
                                             <img
-                                                src={`http://localhost:5000/${friend.profilePic}`}
+                                                src={getImageUrl(friend.profilePic)}
                                                 alt="profile"
                                                 style={{
                                                     width: "100%",

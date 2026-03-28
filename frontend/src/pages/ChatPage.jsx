@@ -7,6 +7,27 @@ import {
     getMessagesApi,
     sendMessageApi,
 } from "../services/chatApi";
+const API_BASE = "http://localhost:5000";
+
+const getImageUrl = (path) => {
+    if (!path) return "";
+
+    // ถ้าเป็น full URL
+    if (path.startsWith("http")) return path;
+
+    // ถ้าเป็น base64
+    if (path.startsWith("data:image") || path.startsWith("data:video")) {
+        return path;
+    }
+
+    // ถ้ามี uploads อยู่แล้ว
+    if (path.includes("uploads")) {
+        return `${API_BASE}/${path}`;
+    }
+
+    // default
+    return `${API_BASE}/uploads/${path}`;
+};
 
 // เป็นหน้าห้องแชต
 
@@ -191,7 +212,7 @@ function ChatPage() {
                     >
                         {friendProfilePic ? (
                             <img
-                                src={`http://localhost:5000/${friendProfilePic}`}
+                                src={getImageUrl(friendProfilePic)}
                                 alt="friend-profile"
                                 style={{ width: "100%", height: "100%", objectFit: "cover" }}
                             />
@@ -265,7 +286,7 @@ function ChatPage() {
                                             >
                                                 {msg.sender?.profilePic ? (
                                                     <img
-                                                        src={`http://localhost:5000/${msg.sender.profilePic}`}
+                                                        src={getImageUrl(msg.serder?.profilePic)}
                                                         alt="sender-profile"
                                                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                                                     />

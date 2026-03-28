@@ -11,6 +11,8 @@ import {
   updateProfile,
   forgotPassword,
   resetPassword,
+  requestAccountChange,
+  confirmAccountChange,
 } from "../controllers/authController.js";
 import userAuth from "../middleware/authMiddleware.js";
 import upload from "../middleware/multer.js";
@@ -26,5 +28,7 @@ router.post("/resend-verification", resendVerificationEmail);
 router.put("/update-profile", userAuth, upload.single("profilePic"), updateProfile);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.put("/request-account-change", userAuth, requestAccountChange);
+router.get("/confirm-change", confirmAccountChange);
 
 export default router;

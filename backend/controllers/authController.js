@@ -476,3 +476,103 @@ export const sendResetPasswordEmail = async (to, url = "#") => {
 
   console.log("RESET MAIL SENT:", info.response);
 };
+export const requestAccountChange = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { name, email, password } = req.body;
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "ไม่พบผู้ใช้" });
+    }
+
+    // เปลี่ยนชื่อได้เลย
+    if (name && name !== user.name) {
+      user.name = name;
+    }
+
+    const emailChanged = email && email !== user.email;
+    const passwordChanged = password && password.trim() !== "";
+
+    if (!emailChanged && !passwordChanged) {
+      await user.save();
+      return res.json({ success: true, message: "อัปเดตสำเร็จ" });
+    }
+
+    // ตรวจ email ซ้ำ
+    if (emailChanged) {
+      const exist = await userModel.findOne({ email });
+      if (exist && exist._id.toString() !== userId) {
+        return res.status(400).json({
+          success: false,
+          message: "อีเมลนี้ถูกใช้งานแล้ว",
+        });
+      }
+      user.pendingEmail = email;
+    }
+
+    // hash password ก่อนเก็บ
+    if (passwordChanged) {
+      const hashed = await bcrypt.hash(password, 10);
+      user.pendingPassword = hashed;
+    }
+
+    // สร้าง token
+    const token = crypto.randomBytes(32).toString("hex");
+    user.changeVerifyToken = token;
+    user.changeVerifyExpire = Date.now() + 30 * 60 * 1000;
+
+    await user.save();
+
+    const verifyUrl = `${process.env.BACKEND_URL}/api/auth/confirm-change?token=${token}`;
+
+    await sendEmail(user.email, verifyUrl);
+
+    return res.json({
+      success: true,
+      message: "ส่งอีเมลยืนยันแล้ว",
+      requireVerification: true,
+    });
+  } catch (err) {
+    console.log("REQUEST CHANGE ERROR:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+export const confirmAccountChange = async (req, res) => {
+  try {
+    const { token } = req.query;
+
+    const user = await userModel.findOne({
+      changeVerifyToken: token,
+      changeVerifyExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      return res.json({ success: false, message: "ลิงก์หมดอายุ" });
+    }
+
+    if (user.pendingEmail) {
+      user.email = user.pendingEmail;
+      user.pendingEmail = "";
+      user.isVerified = true;
+    }
+
+    if (user.pendingPassword) {
+      user.password = user.pendingPassword;
+      user.pendingPassword = "";
+    }
+
+    user.changeVerifyToken = "";
+    user.changeVerifyExpire = 0;
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "ยืนยันสำเร็จ",
+    });
+  } catch (err) {
+    console.log("CONFIRM CHANGE ERROR:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};

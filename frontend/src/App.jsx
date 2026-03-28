@@ -1,18 +1,3 @@
-// router หลักของ frontend
-// มีหน้าหลัก ๆ เช่น:
-
-// / → Home
-// /login
-// /search
-// /friend-requests
-// /friends
-// /chat/:conversationId
-// /profilepage
-// /groups
-// /groups/:groupId
-
-// สรุปคือเป็นไฟล์กำหนดว่า URL ไหนจะเปิดหน้าอะไร
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -29,6 +14,7 @@ import CheckEmail from "./pages/CheckEmail";
 
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ConfirmAccountChange from "./pages/ConfirmAccountChange";
 
 import ProfilePage from "./pages/ProfilePage";
 
@@ -36,6 +22,8 @@ import GroupsPage from "./pages/GroupsPage";
 import GroupDetailPage from "./pages/GroupDetailPage";
 
 import EditGroupPage from "./pages/EditGroupPage";
+
+import SettingsPage from "./pages/SettingsPage";
 
 const App = () => {
   return (
@@ -58,6 +46,10 @@ const App = () => {
 
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route
+          path="/confirm-account-change"
+          element={<ConfirmAccountChange />}
+        />
 
         <Route path="/profilepage" element={<ProfilePage />} />
         <Route path="/profile/:userId" element={<ProfilePage />} />
@@ -66,6 +58,7 @@ const App = () => {
         <Route path="/groups/:groupId" element={<GroupDetailPage />} />
 
         <Route path="/groups/edit/:groupId" element={<EditGroupPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

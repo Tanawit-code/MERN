@@ -1,28 +1,34 @@
-import React, { useState, useContext } from "react";
+import React, { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { AppContext } from "../context/AppContext";
 
-// ใช้ล็อกอินเข้าสู่ระบบ โดยส่งข้อมูลไปที่ /api/auth/login
-// ถ้าสำเร็จ backend จะ set cookie ให้
-
-const Login = () => {
+const LoginPage = () => {
   const navigate = useNavigate();
   const { BackendUrl, setIsLoggedIn, getUserData } = useContext(AppContext);
 
-  const [state, setState] = useState("Sign Up");
+  const [mode, setMode] = useState("login"); // login | signup
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [loading, setLoading] = useState(false);
   const [showResend, setShowResend] = useState(false);
 
-  const resendVerification = async () => {
+  const resetForm = () => {
+    setName("");
+    setEmail("");
+    setPassword("");
+    setShowResend(false);
+  };
+
+  const handleResendVerification = async () => {
     try {
       const { data } = await axios.post(
         `${BackendUrl}/api/auth/resend-verification`,
-        { email }
+        { email },
+        { withCredentials: true }
       );
 
       if (data.success) {
@@ -39,178 +45,205 @@ const Login = () => {
     }
   };
 
-  const onSubmitHandler = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setShowResend(false);
 
     try {
-      setIsSubmitting(true);
-      setShowResend(false);
-      axios.defaults.withCredentials = true;
+      setLoading(true);
 
-      if (state === "Sign Up") {
-        const { data } = await axios.post(`${BackendUrl}/api/auth/register`, {
-          name,
-          email,
-          password,
-        });
+      if (mode === "signup") {
+        const { data } = await axios.post(
+          `${BackendUrl}/api/auth/register`,
+          {
+            name,
+            email,
+            password,
+          },
+          { withCredentials: true }
+        );
 
         if (data.success) {
-          toast.success(
-            data.message || "สมัครสมาชิกสำเร็จ กรุณาตรวจสอบอีเมล"
-          );
+          toast.success(data.message || "สมัครสมาชิกสำเร็จ");
           navigate("/check-email", { state: { email } });
+          resetForm();
           return;
         }
-      } else {
-        const { data } = await axios.post(`${BackendUrl}/api/auth/login`, {
+
+        toast.error(data.message || "สมัครสมาชิกไม่สำเร็จ");
+        return;
+      }
+
+      const { data } = await axios.post(
+        `${BackendUrl}/api/auth/login`,
+        {
           email,
           password,
-        });
+        },
+        { withCredentials: true }
+      );
 
-        if (data.success) {
-          toast.success("เข้าสู่ระบบสำเร็จ");
-          setIsLoggedIn(true);
-          await getUserData();
-          navigate("/");
-          return;
-        }
+      if (data.success) {
+        setIsLoggedIn(true);
+        await getUserData?.();
+        toast.success(data.message || "เข้าสู่ระบบสำเร็จ");
+        navigate("/");
+        return;
       }
+
+      toast.error(data.message || "เข้าสู่ระบบไม่สำเร็จ");
     } catch (error) {
       const message =
         error.response?.data?.message ||
         error.message ||
-        "เกิดปัญหาในการเชื่อมต่อกับ server";
+        "เกิดข้อผิดพลาดในการเชื่อมต่อ";
 
       toast.error(message);
 
-      if (
-        state === "Login" &&
-        message.includes("ยืนยันอีเมล")
-      ) {
+      if (mode === "login" && message.includes("ยืนยันอีเมล")) {
         setShowResend(true);
       }
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-6 bg-gradient-to-br from-blue-200 to-purple-400">
-      <div className="bg-slate-900 p-10 rounded-lg shadow-lg w-full sm:w-96 text-indigo-300 text-sm">
-        <p onClick={() => navigate("/")} className="cursor-pointer mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-100 to-indigo-200 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8">
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          className="text-sm text-gray-500 hover:text-blue-600 mb-4 cursor-pointer"
+        >
           ← กลับหน้าแรก
-        </p>
+        </button>
 
-        <h2 className="text-3xl font-semibold text-white text-center mb-3">
-          {state === "Sign Up" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}
-        </h2>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-800">
+            {mode === "login" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
+          </h1>
+          <p className="text-sm text-slate-500 mt-2">
+            {mode === "login"
+              ? "ยินดีต้อนรับกลับ เข้าสู่ระบบเพื่อใช้งานต่อ"
+              : "สร้างบัญชีใหม่เพื่อเริ่มใช้งาน"}
+          </p>
+        </div>
 
-        <p className="text-center text-sm mb-6">
-          {state === "Sign Up"
-            ? "กรุณากรอกข้อมูลเพื่อสมัครสมาชิก"
-            : "กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบ"}
-        </p>
-
-        <form onSubmit={onSubmitHandler}>
-          {state === "Sign Up" && (
-            <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === "signup" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                ชื่อ
+              </label>
               <input
-                onChange={(e) => setName(e.target.value)}
-                value={name}
-                className="bg-transparent outline-none w-full"
                 type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 placeholder="ชื่อ-นามสกุล"
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
                 required
               />
             </div>
           )}
 
-          <div className="mb-4 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              อีเมล
+            </label>
             <input
-              onChange={(e) => setEmail(e.target.value)}
-              value={email}
-              className="bg-transparent outline-none w-full"
               type="email"
-              placeholder="อีเมล"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
               required
             />
           </div>
 
-          <div className="mb-6 flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              รหัสผ่าน
+            </label>
             <input
-              onChange={(e) => setPassword(e.target.value)}
-              value={password}
-              className="bg-transparent outline-none w-full"
               type="password"
-              placeholder="รหัสผ่าน"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="กรอกรหัสผ่าน"
+              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
               required
             />
           </div>
+
+          {mode === "login" && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-sm text-amber-600 hover:text-amber-700 cursor-pointer"
+              >
+                ลืมรหัสผ่าน?
+              </button>
+            </div>
+          )}
 
           <button
-            disabled={isSubmitting}
             type="submit"
-            className="w-full py-2.5 rounded-full bg-indigo-500 text-white font-medium hover:bg-indigo-600 transition disabled:opacity-50"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-2xl transition disabled:opacity-60 cursor-pointer"
           >
-            {isSubmitting
+            {loading
               ? "กำลังดำเนินการ..."
-              : state === "Sign Up"
-                ? "สมัครสมาชิก"
-                : "เข้าสู่ระบบ"}
+              : mode === "login"
+                ? "เข้าสู่ระบบ"
+                : "สมัครสมาชิก"}
           </button>
         </form>
-        {state === "Login" && (
-          <p className="text-center mt-3">
-            <span
-              onClick={() => navigate("/forgot-password")}
-              className="text-amber-400 cursor-pointer"
-            >
-              ลืมรหัสผ่าน?
-            </span>
-          </p>
-        )}
 
         {showResend && (
           <button
-            onClick={resendVerification}
-            className="w-full mt-3 py-2.5 rounded-full bg-amber-500 text-white font-medium hover:bg-amber-600 transition"
+            type="button"
+            onClick={handleResendVerification}
+            className="w-full mt-4 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 rounded-2xl transition cursor-pointer"
           >
             ส่งลิงก์ยืนยันอีเมลใหม่
           </button>
         )}
 
-        <p className="text-center text-sm text-gray-400 mt-6">
-          {state === "Sign Up" ? (
+        <div className="mt-6 text-center text-sm text-slate-500">
+          {mode === "login" ? (
             <>
-              มีบัญชีอยู่แล้ว ?
-              <span
+              ยังไม่มีบัญชี?
+              <button
+                type="button"
                 onClick={() => {
-                  setState("Login");
+                  setMode("signup");
                   setShowResend(false);
                 }}
-                className="text-indigo-500 cursor-pointer ml-1"
+                className="ml-1 text-blue-600 font-medium hover:text-blue-700 cursor-pointer"
               >
-                เข้าสู่ระบบ
-              </span>
+                สมัครสมาชิก
+              </button>
             </>
           ) : (
             <>
-              ยังไม่มีบัญชี ?
-              <span
+              มีบัญชีอยู่แล้ว?
+              <button
+                type="button"
                 onClick={() => {
-                  setState("Sign Up");
+                  setMode("login");
                   setShowResend(false);
                 }}
-                className="text-indigo-500 cursor-pointer ml-1"
+                className="ml-1 text-blue-600 font-medium hover:text-blue-700 cursor-pointer"
               >
-                สมัครสมาชิก
-              </span>
+                เข้าสู่ระบบ
+              </button>
             </>
           )}
-        </p>
+        </div>
       </div>
     </div>
   );
 };
 
-export default Login;
+export default LoginPage;

@@ -1,23 +1,12 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
+import { getMediaUrl, hasMedia } from "../utils/media";
 import Navbar from "../components/Navbar";
+
 
 const API_BASE = "http://localhost:5000";
 
-const getImageUrl = (path) => {
-  if (!path) return "https://via.placeholder.com/40";
-
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-
-  if (path.startsWith("/uploads")) {
-    return `${API_BASE}${path}`;
-  }
-
-  return `${API_BASE}/uploads/${path}`;
-};
 
 const Home = () => {
   const navigate = useNavigate();
@@ -341,7 +330,7 @@ const Home = () => {
             <div className="flex items-center gap-3">
               {userData?.profilePic ? (
                 <img
-                  src={`http://localhost:5000/${userData.profilePic}`}
+                  src={getMediaUrl(userData?.profilePic)}
                   alt={userData?.name}
                   className="w-12 h-12 rounded-full object-cover border"
                 />
@@ -383,7 +372,7 @@ const Home = () => {
 
               <button
                 onClick={handlePost}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-xl"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-xl cursor-pointer"
               >
                 {loadingPost ? "กำลังโพสต์..." : "โพสต์"}
               </button>
@@ -433,13 +422,13 @@ const Home = () => {
                   <Link to={`/profile/${post.userId?._id}`}>
                     {post.userId?.profilePic ? (
                       <img
-                        src={`http://localhost:5000/${post.userId?.profilePic}`}
+                        src={getMediaUrl(post.userId?.profilePic)}
                         alt={post.userId?.name}
                         className="w-12 h-12 rounded-full object-cover border"
                       />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
-                        {post.userId?.name?.charAt(0)?.toUpperCase()}
+                        {post.userId?.name?.charAt(0)?.toUpperCase() || "U"}
                       </div>
                     )}
                   </Link>
@@ -534,7 +523,7 @@ const Home = () => {
                 />
                 <button
                   onClick={() => handleComment(post._id)}
-                  className="bg-blue-500 text-white px-4 rounded"
+                  className="bg-blue-500 text-white px-4 rounded cursor-pointer"
                 >
                   ส่ง
                 </button>
@@ -549,7 +538,7 @@ const Home = () => {
                         <div className="flex gap-3">
                           {c.profilePic ? (
                             <img
-                              src={`http://localhost:5000/${c.profilePic}`}
+                              src={getMediaUrl(c.profilePic)}
                               alt={c.name}
                               className="w-9 h-9 rounded-full object-cover border"
                             />
@@ -587,7 +576,7 @@ const Home = () => {
                                   onClick={() =>
                                     handleDeleteComment(post._id, c._id)
                                   }
-                                  className="block px-3 py-2 text-red-500 hover:bg-gray-100 w-full text-left text-xs"
+                                  className="block px-3 py-2 text-red-500 hover:bg-gray-100 w-full text-left text-xs cursor-pointer"
                                 >
                                   ลบ Comment
                                 </button>
@@ -610,7 +599,7 @@ const Home = () => {
             <div className="flex items-center gap-3">
               {userData?.profilePic ? (
                 <img
-                  src={`http://localhost:5000/${userData.profilePic}`}
+                  src={getMediaUrl(userData?.profilePic)}
                   alt={userData?.name}
                   className="w-12 h-12 rounded-full object-cover border"
                 />
@@ -661,7 +650,7 @@ const Home = () => {
                     >
                       {friend.profilePic ? (
                         <img
-                          src={`http://localhost:5000/${friend.profilePic}`}
+                          src={getMediaUrl(friend.profilePic)}
                           alt={friend.name}
                           className="w-11 h-11 rounded-full object-cover border"
                         />
@@ -717,7 +706,7 @@ const Home = () => {
                       >
                         {user.profilePic ? (
                           <img
-                            src={`http://localhost:5000/${user.profilePic}`}
+                            src={getMediaUrl(user.profilePic)}
                             alt={user.name}
                             className="w-11 h-11 rounded-full object-cover border"
                           />
@@ -739,13 +728,13 @@ const Home = () => {
                     <div className="mt-3 flex gap-2">
                       <button
                         onClick={() => handleSendFriendRequest(user._id)}
-                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2 rounded-lg"
+                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2 rounded-lg cursor-pointer"
                       >
                         เพิ่มเพื่อน
                       </button>
                       <Link
                         to={`/profile/${user._id}`}
-                        className="flex-1 bg-white border hover:bg-gray-100 text-center text-sm px-3 py-2 rounded-lg"
+                        className="flex-1 bg-white border hover:bg-gray-100 text-center text-sm px-3 py-2 rounded-lg cursor-pointer"
                       >
                         ดูโปรไฟล์
                       </Link>

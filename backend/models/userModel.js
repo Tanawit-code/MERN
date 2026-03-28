@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema(
     },
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
+    pendingEmail: { type: String, default: "" },
+    pendingPassword: { type: String, default: "" },
+    changeVerifyToken: { type: String, default: "" },
+    changeVerifyExpire: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
