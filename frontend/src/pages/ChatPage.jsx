@@ -286,7 +286,7 @@ function ChatPage() {
                                             >
                                                 {msg.sender?.profilePic ? (
                                                     <img
-                                                        src={getImageUrl(msg.serder?.profilePic)}
+                                                        src={getImageUrl(msg.sender?.profilePic)}
                                                         alt="sender-profile"
                                                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                                                     />
