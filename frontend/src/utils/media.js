@@ -1,7 +1,5 @@
 import { API_BASE } from "../config/api";
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
-
 export const getMediaUrl = (path) => {
     if (!path || typeof path !== "string") return "";
 
