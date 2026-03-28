@@ -6,7 +6,7 @@ import {
 } from "../services/chatApi";
 import { useNavigate, Link } from "react-router-dom";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
 const getImageUrl = (path) => {
     if (!path) return "";

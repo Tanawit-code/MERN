@@ -4,7 +4,7 @@ import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
 import { getMediaUrl } from "../utils/media";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
 const ProfilePage = () => {
     const navigate = useNavigate();
@@ -654,8 +654,8 @@ const ProfilePage = () => {
                     <button
                         onClick={() => handleLike(post._id)}
                         className={`hover:text-blue-600 cursor-pointer ${post.likes?.includes(userData?._id)
-                                ? "text-blue-600 font-semibold"
-                                : ""
+                            ? "text-blue-600 font-semibold"
+                            : ""
                             }`}
                     >
                         ถูกใจ {post.likes?.length || 0}
@@ -766,8 +766,8 @@ const ProfilePage = () => {
                                         <button
                                             onClick={handleFollow}
                                             className={`px-5 py-2.5 rounded-xl text-white cursor-pointer ${isFollowing
-                                                    ? "bg-gray-500"
-                                                    : "bg-blue-500 hover:bg-blue-600"
+                                                ? "bg-gray-500"
+                                                : "bg-blue-500 hover:bg-blue-600"
                                                 }`}
                                         >
                                             {isFollowing ? "กำลังติดตาม" : "ติดตาม"}

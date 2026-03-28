@@ -4,7 +4,7 @@ import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
 import ProfilePostCard from "../components/ProfilePostCard";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
 const UserProfilePage = () => {
     const { userId } = useParams();
@@ -250,8 +250,8 @@ const UserProfilePage = () => {
                                         onClick={handleToggleFollow}
                                         disabled={followLoading}
                                         className={`px-5 py-2.5 rounded-xl font-medium ${profile.isFollowing
-                                                ? "bg-gray-200 hover:bg-gray-300 text-gray-800"
-                                                : "bg-blue-500 hover:bg-blue-600 text-white"
+                                            ? "bg-gray-200 hover:bg-gray-300 text-gray-800"
+                                            : "bg-blue-500 hover:bg-blue-600 text-white"
                                             }`}
                                     >
                                         {followLoading

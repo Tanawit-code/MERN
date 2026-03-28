@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { getGroups, createGroup, deleteGroup } from "../services/groupApi";
 import Navbar from "../components/Navbar";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
 const getImageUrl = (path) => {
     if (!path) return "";
