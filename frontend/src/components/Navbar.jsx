@@ -219,7 +219,7 @@ const Navbar = () => {
                                 letterSpacing: "-0.3px",
                             }}
                         >
-                            MySocial
+                            EyesNote
                         </Link>
 
                         <button
