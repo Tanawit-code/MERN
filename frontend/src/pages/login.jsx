@@ -106,6 +106,8 @@ const LoginPage = () => {
         );
 
         if (data.success) {
+          setIsLoggedIn(true);
+          await getUserData?.();
           toast.success(data.message || "สมัครสมาชิกสำเร็จ");
           resetForm();
           navigate("/");

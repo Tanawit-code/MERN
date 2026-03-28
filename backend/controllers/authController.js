@@ -88,42 +88,17 @@ export const register = async (req, res) => {
   try {
     const { name, email, password, confirmPassword } = req.body;
 
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !name.trim()) {
       return res.status(400).json({
         success: false,
-        message: "กรุณากรอก name, email, password และ confirmPassword ให้ครบ",
+        message: "กรุณากรอกชื่อ",
       });
     }
 
-    if (name.trim().length < 2) {
+    if (!email || !password || !confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร",
-      });
-    }
-
-    const normalizedEmail = email.trim().toLowerCase();
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(normalizedEmail)) {
-      return res.status(400).json({
-        success: false,
-        message: "รูปแบบอีเมลไม่ถูกต้อง",
-      });
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
-      });
-    }
-
-    const hasUpperCase = /[A-Z]/.test(password);
-    if (!hasUpperCase) {
-      return res.status(400).json({
-        success: false,
-        message: "รหัสผ่านต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว",
+        message: "กรุณากรอกข้อมูลให้ครบ",
       });
     }
 
@@ -134,8 +109,11 @@ export const register = async (req, res) => {
       });
     }
 
-    const exists = await userModel.findOne({ email: normalizedEmail });
-    if (exists) {
+    const existingUser = await userModel.findOne({
+      email: email.toLowerCase(),
+    });
+
+    if (existingUser) {
       return res.status(400).json({
         success: false,
         message: "อีเมลนี้ถูกใช้งานแล้ว",
@@ -144,34 +122,54 @@ export const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await userModel.create({
+    const newUser = await userModel.create({
       name: name.trim(),
-      email: normalizedEmail,
+      email: email.toLowerCase(),
       password: hashedPassword,
-      verificationToken: "",
-      verificationTokenExpire: 0,
+
+      // ✅ สมัครแล้ว verified ทันที
       isVerified: true,
+
+      // กันค่าพวก token/otp เก่าค้าง
+      verificationToken: "",
+      verifyOTP: "",
+      verifyOTPExpire: null,
     });
 
-    try {
-      await sendRegisterSuccessEmail(user.email, user.name);
-    } catch (emailError) {
-      console.error("REGISTER MAIL ERROR:", emailError);
-      // ไม่ให้สมัครล้มเพราะส่งเมลไม่สำเร็จ
-    }
+    // ✅ สร้าง token และ login ให้ทันที
+    const token = createToken(newUser._id);
 
-    const token = createToken(user._id);
-    res.cookie("token", token, cookieOptions);
+    res.cookie("token", token, COOKIE_OPTIONS);
+
+    // ✅ ส่งอีเมลแจ้งสมัครสำเร็จ แต่ไม่บังคับต้องกดยืนยัน
+    try {
+      await transporter.sendMail({
+        from: process.env.SENDER_EMAIL,
+        to: newUser.email,
+        subject: "สมัครสมาชิกสำเร็จ",
+        html: `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                        <h2>สวัสดี ${newUser.name}</h2>
+                        <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
+                        <p>อีเมลนี้เป็นเพียงการแจ้งเตือนว่าสมัครสมาชิกสำเร็จ</p>
+                        <hr />
+                        <p style="color:#666;font-size:12px;">ขอบคุณที่ใช้งานระบบของเรา</p>
+                    </div>
+                `,
+      });
+    } catch (mailError) {
+      console.log("REGISTER MAIL ERROR:", mailError.message);
+    }
 
     return res.status(201).json({
       success: true,
-      message: "สมัครสมาชิกสำเร็จ",
+      message: "สมัครสมาชิกสำเร็จ และเข้าสู่ระบบแล้ว",
       user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        isVerified: user.isVerified,
-        profilePic: user.profilePic,
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        profilePic: newUser.profilePic || "",
+        isVerified: newUser.isVerified,
       },
     });
   } catch (error) {
