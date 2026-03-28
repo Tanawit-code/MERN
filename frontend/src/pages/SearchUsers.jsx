@@ -8,25 +8,14 @@ import {
     getFriendsApi,
 } from "../services/chatApi";
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+const API_BASE =
+    import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
 const getImageUrl = (path) => {
     if (!path) return "";
-
-    // ถ้าเป็น full URL
     if (path.startsWith("http")) return path;
-
-    // ถ้าเป็น base64
-    if (path.startsWith("data:image") || path.startsWith("data:video")) {
-        return path;
-    }
-
-    // ถ้ามี uploads อยู่แล้ว
-    if (path.includes("uploads")) {
-        return `${API_BASE}/${path}`;
-    }
-
-    // default
+    if (path.startsWith("data:image") || path.startsWith("data:video")) return path;
+    if (path.includes("uploads")) return `${API_BASE}/${path}`;
     return `${API_BASE}/uploads/${path}`;
 };
 
@@ -123,7 +112,10 @@ function SearchUsers() {
     };
 
     const handleSearch = async () => {
-        if (!keyword.trim()) return;
+        if (!keyword.trim()) {
+            setUsers([]);
+            return;
+        }
 
         try {
             setLoading(true);
@@ -179,280 +171,220 @@ function SearchUsers() {
         }
     };
 
-    const renderUserCard = (user) => (
-        <div
-            key={user._id}
-            style={{
-                background: "#fff",
-                padding: "16px",
-                borderRadius: "14px",
-                boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "12px",
-                flexWrap: "wrap",
-            }}
-        >
+    const renderAvatar = (user, compact = false) => {
+        const size = compact ? "h-11 w-11" : "h-14 w-14";
+
+        if (user.profilePic) {
+            return (
+                <img
+                    src={getImageUrl(user.profilePic)}
+                    alt="profile"
+                    className={`${size} rounded-full object-cover border border-slate-200`}
+                />
+            );
+        }
+
+        return (
             <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    minWidth: 0,
-                }}
+                className={`${size} rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-lg shrink-0`}
             >
+                {(user.name || user.username || "U").charAt(0).toUpperCase()}
+            </div>
+        );
+    };
+
+    const renderActionButton = (user, compact = false) => {
+        const baseClass =
+            "rounded-xl px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed";
+        const smallClass = compact ? " px-3 py-2 text-xs" : "";
+
+        if (friendMap[user._id]) {
+            return (
+                <button
+                    disabled
+                    className={`${baseClass}${smallClass} bg-green-600 text-white`}
+                >
+                    เป็นเพื่อนแล้ว
+                </button>
+            );
+        }
+
+        if (sentRequests[user._id]) {
+            return (
+                <button
+                    disabled
+                    className={`${baseClass}${smallClass} bg-slate-400 text-white`}
+                >
+                    ส่งคำขอแล้ว
+                </button>
+            );
+        }
+
+        return (
+            <button
+                onClick={() => handleAddFriend(user._id)}
+                disabled={sendingId === user._id}
+                className={`${baseClass}${smallClass} bg-blue-600 text-white hover:bg-blue-700`}
+            >
+                {sendingId === user._id ? "กำลังส่ง..." : "เพิ่มเพื่อน"}
+            </button>
+        );
+    };
+
+    const renderUserCard = (user, compact = false) => {
+        return (
+            <div
+                key={user._id}
+                className={`rounded-2xl border border-slate-200 bg-white ${compact ? "p-3" : "p-4"
+                    }`}
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                        {renderAvatar(user, compact)}
+
+                        <div className="min-w-0 flex-1">
+                            <h4
+                                className={`truncate font-bold text-slate-800 ${compact ? "text-sm" : "text-base"
+                                    }`}
+                            >
+                                {user.name || user.username || "-"}
+                            </h4>
+                            <p
+                                className={`mt-1 break-all text-slate-500 ${compact ? "text-xs" : "text-sm"
+                                    }`}
+                            >
+                                {user.email}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div
-                    style={{
-                        width: "52px",
-                        height: "52px",
-                        borderRadius: "50%",
-                        overflow: "hidden",
-                        background: "#2563eb",
-                        color: "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "bold",
-                        fontSize: "18px",
-                        flexShrink: 0,
-                    }}
+                    className={`mt-4 flex flex-wrap items-center gap-2 ${compact ? "justify-between" : "justify-end"
+                        }`}
                 >
-                    {user.profilePic ? (
-                        <img
-                            src={getImageUrl(user.profilePic)}
-                            alt="profile"
-                            style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                            }}
-                        />
-                    ) : (
-                        (user.name || user.username || "U").charAt(0).toUpperCase()
-                    )}
-                </div>
+                    <Link
+                        to={`/profile/${user._id}`}
+                        className={`rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 ${compact ? "px-3 py-2 text-xs font-semibold" : "px-4 py-2 text-sm font-semibold"
+                            }`}
+                    >
+                        ดูโปรไฟล์
+                    </Link>
 
-                <div style={{ minWidth: 0 }}>
-                    <h4
-                        style={{
-                            margin: 0,
-                            fontSize: "16px",
-                            color: "#111827",
-                        }}
-                    >
-                        {user.name || user.username || "-"}
-                    </h4>
-                    <p
-                        style={{
-                            margin: "6px 0 0",
-                            color: "#6b7280",
-                            fontSize: "14px",
-                            wordBreak: "break-word",
-                        }}
-                    >
-                        {user.email}
-                    </p>
+                    {renderActionButton(user, compact)}
                 </div>
             </div>
+        );
+    };
 
-            <div
-                style={{
-                    display: "flex",
-                    gap: "8px",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    justifyContent: "flex-end",
-                }}
-            >
-                <Link
-                    to={`/profile/${user._id}`}
-                    style={{
-                        padding: "8px 14px",
-                        borderRadius: "8px",
-                        border: "1px solid #d1d5db",
-                        background: "#fff",
-                        color: "#111827",
-                        textDecoration: "none",
-                        display: "inline-block",
-                        fontWeight: "500",
-                    }}
-                >
-                    ดูโปรไฟล์
-                </Link>
-
-                {friendMap[user._id] ? (
-                    <button
-                        disabled
-                        style={{
-                            padding: "8px 14px",
-                            borderRadius: "8px",
-                            border: "none",
-                            background: "#16a34a",
-                            color: "#fff",
-                        }}
-                    >
-                        เป็นเพื่อนแล้ว
-                    </button>
-                ) : sentRequests[user._id] ? (
-                    <button
-                        disabled
-                        style={{
-                            padding: "8px 14px",
-                            borderRadius: "8px",
-                            border: "none",
-                            background: "#9ca3af",
-                            color: "#fff",
-                        }}
-                    >
-                        ส่งคำขอแล้ว
-                    </button>
-                ) : (
-                    <button
-                        onClick={() => handleAddFriend(user._id)}
-                        disabled={sendingId === user._id}
-                        style={{
-                            padding: "8px 14px",
-                            borderRadius: "8px",
-                            border: "none",
-                            background: "#2563eb",
-                            color: "#fff",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                        }}
-                    >
-                        {sendingId === user._id ? "กำลังส่ง..." : "เพิ่มเพื่อน"}
-                    </button>
-                )}
-            </div>
-        </div>
-    );
+    const resultCountText =
+        keyword.trim() && !loading
+            ? `พบ ${users.length} ผลลัพธ์สำหรับ "${keyword}"`
+            : "พิมพ์ชื่อหรืออีเมลเพื่อค้นหาเพื่อนใหม่";
 
     return (
-        <div style={{ minHeight: "100vh", background: "#f3f4f6" }}>
+        <div className="min-h-screen bg-slate-100">
             <Navbar />
 
-            <div style={{ maxWidth: "1000px", margin: "0 auto", padding: "24px" }}>
-                <div
-                    style={{
-                        background: "#fff",
-                        borderRadius: "18px",
-                        padding: "20px",
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-                        marginBottom: "24px",
-                    }}
-                >
-                    <h2 style={{ margin: 0, marginBottom: "18px", color: "#111827" }}>
-                        ค้นหาผู้ใช้
-                    </h2>
+            <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                    {/* ฝั่งซ้าย */}
+                    <div className="min-w-0 space-y-6">
+                        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                            <div className="mb-5">
+                                <h1 className="text-2xl font-bold text-slate-800">
+                                    ค้นหาผู้ใช้
+                                </h1>
+                                <p className="mt-2 text-sm text-slate-500">
+                                    ค้นหาด้วยชื่อหรืออีเมล แล้วส่งคำขอเป็นเพื่อนได้ทันที
+                                </p>
+                            </div>
 
-                    <div
-                        style={{
-                            display: "flex",
-                            gap: "10px",
-                            flexWrap: "wrap",
-                        }}
-                    >
-                        <input
-                            type="text"
-                            placeholder="พิมพ์ชื่อหรืออีเมล"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                            style={{
-                                padding: "12px 14px",
-                                borderRadius: "10px",
-                                border: "1px solid #d1d5db",
-                                width: "320px",
-                                fontSize: "14px",
-                                outline: "none",
-                                background: "#f9fafb",
-                            }}
-                        />
+                            <div className="flex flex-col gap-3 sm:flex-row">
+                                <input
+                                    type="text"
+                                    placeholder="พิมพ์ชื่อหรืออีเมล"
+                                    value={keyword}
+                                    onChange={(e) => setKeyword(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                                    className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+                                />
 
-                        <button
-                            onClick={handleSearch}
-                            style={{
-                                padding: "12px 18px",
-                                border: "none",
-                                borderRadius: "10px",
-                                background: "#2563eb",
-                                color: "#fff",
-                                cursor: "pointer",
-                                fontWeight: "600",
-                            }}
-                        >
-                            ค้นหา
-                        </button>
-                    </div>
-                </div>
-
-                <div
-                    style={{
-                        background: "#fff",
-                        borderRadius: "18px",
-                        padding: "20px",
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-                        marginBottom: "24px",
-                    }}
-                >
-                    <div
-                        style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            marginBottom: "16px",
-                            flexWrap: "wrap",
-                            gap: "8px",
-                        }}
-                    >
-                        <h3 style={{ margin: 0, color: "#111827" }}>คนที่แนะนำ</h3>
-                        <button
-                            onClick={fetchSuggestedUsers}
-                            style={{
-                                border: "none",
-                                background: "#e5e7eb",
-                                padding: "8px 12px",
-                                borderRadius: "8px",
-                                cursor: "pointer",
-                            }}
-                        >
-                            รีเฟรช
-                        </button>
-                    </div>
-
-                    {loadingSuggestions ? (
-                        <p style={{ color: "#6b7280" }}>กำลังโหลดคำแนะนำ...</p>
-                    ) : suggestedUsers.length === 0 ? (
-                        <p style={{ color: "#6b7280" }}>ยังไม่มีคำแนะนำ</p>
-                    ) : (
-                        <div style={{ display: "grid", gap: "12px" }}>
-                            {suggestedUsers.slice(0, 5).map(renderUserCard)}
+                                <button
+                                    onClick={handleSearch}
+                                    className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700"
+                                >
+                                    ค้นหา
+                                </button>
+                            </div>
                         </div>
-                    )}
-                </div>
 
-                <div
-                    style={{
-                        background: "#fff",
-                        borderRadius: "18px",
-                        padding: "20px",
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-                    }}
-                >
-                    <h3 style={{ marginTop: 0, marginBottom: "16px", color: "#111827" }}>
-                        ผลการค้นหา
-                    </h3>
+                        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">
+                                        ผลการค้นหา
+                                    </h2>
+                                    <p className="mt-2 text-sm text-slate-500">{resultCountText}</p>
+                                </div>
+                            </div>
 
-                    {loading && <p style={{ color: "#6b7280" }}>กำลังค้นหา...</p>}
+                            {loading && (
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                    กำลังค้นหา...
+                                </div>
+                            )}
 
-                    {!loading && users.length === 0 && (
-                        <p style={{ color: "#6b7280" }}>ยังไม่มีผลลัพธ์</p>
-                    )}
+                            {!loading && users.length === 0 && (
+                                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                                    {keyword.trim()
+                                        ? "ไม่พบผู้ใช้ที่ค้นหา"
+                                        : "ยังไม่มีผลลัพธ์ ให้เริ่มค้นหาจากช่องด้านบน"}
+                                </div>
+                            )}
 
-                    <div style={{ display: "grid", gap: "12px" }}>
-                        {users.map(renderUserCard)}
+                            <div className="space-y-4">
+                                {users.map((user) => renderUserCard(user))}
+                            </div>
+                        </div>
                     </div>
+
+                    {/* ฝั่งขวา */}
+                    <aside className="xl:sticky xl:top-24 xl:self-start">
+                        <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+                            <div className="mb-4 flex items-start justify-between gap-3">
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">
+                                        คนที่แนะนำ
+                                    </h2>
+                                    <p className="mt-2 text-sm text-slate-500">
+                                        รายชื่อที่อาจเป็นเพื่อนของคุณ
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={fetchSuggestedUsers}
+                                    className="rounded-xl bg-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-300"
+                                >
+                                    รีเฟรช
+                                </button>
+                            </div>
+
+                            {loadingSuggestions ? (
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                                    กำลังโหลดคำแนะนำ...
+                                </div>
+                            ) : suggestedUsers.length === 0 ? (
+                                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                                    ยังไม่มีคำแนะนำ
+                                </div>
+                            ) : (
+                                <div className="max-h-[70vh] space-y-3 overflow-y-auto pr-1">
+                                    {suggestedUsers.map((user) => renderUserCard(user, true))}
+                                </div>
+                            )}
+                        </div>
+                    </aside>
                 </div>
             </div>
         </div>

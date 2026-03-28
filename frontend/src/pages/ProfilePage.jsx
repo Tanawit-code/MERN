@@ -4,7 +4,8 @@ import { AppContext } from "../context/AppContext";
 import Navbar from "../components/Navbar";
 import { getMediaUrl } from "../utils/media";
 
-const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
+const API_BASE =
+    import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
 
 const ProfilePage = () => {
     const navigate = useNavigate();
@@ -28,15 +29,12 @@ const ProfilePage = () => {
 
     const [friends, setFriends] = useState([]);
     const [sentRequests, setSentRequests] = useState([]);
-    const [isFollowing, setIsFollowing] = useState(false);
 
-    // แก้ไขโปรไฟล์
     const [name, setName] = useState("");
     const [bio, setBio] = useState("");
     const [profilePic, setProfilePic] = useState("");
     const [coverPic, setCoverPic] = useState("");
 
-    // กล่องโพสต์ แบบเดียวกับ Home
     const [content, setContent] = useState("");
     const [image, setImage] = useState(null);
     const [preview, setPreview] = useState(null);
@@ -114,7 +112,6 @@ const ProfilePage = () => {
             if (data.success) {
                 const profileData = data.profile || data.user;
                 fillProfileForm(profileData);
-                setIsFollowing(profileData.isFollowing || false);
                 await fetchPostsByUser(profileData._id);
             } else {
                 alert(data.message || "โหลดโปรไฟล์ไม่สำเร็จ");
@@ -174,53 +171,6 @@ const ProfilePage = () => {
             setSentRequests([]);
         } finally {
             setLoadingFriendStatus(false);
-        }
-    };
-
-    const handleFollow = async () => {
-        if (!profile?._id || isMyProfile) return;
-
-        try {
-            if (isFriend) {
-                const res = await fetch(`${API_BASE}/api/friends/unfriend`, {
-                    method: "DELETE",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        friendId: profile._id,
-                    }),
-                });
-
-                const data = await res.json();
-
-                if (!res.ok) {
-                    throw new Error(data.message || "ลบเพื่อนไม่สำเร็จ");
-                }
-
-                setIsFollowing(false);
-                await fetchUserProfile(profile._id);
-                await fetchFriendStatus();
-                return;
-            }
-
-            const res = await fetch(`${API_BASE}/api/profile/follow/${profile._id}`, {
-                method: "POST",
-                credentials: "include",
-            });
-
-            const data = await res.json();
-
-            if (data.success) {
-                setIsFollowing(data.isFollowing);
-                await fetchUserProfile(profile._id);
-            } else {
-                alert(data.message || "ติดตามไม่สำเร็จ");
-            }
-        } catch (err) {
-            console.error("FOLLOW ERROR:", err);
-            alert(err.message || "เกิดข้อผิดพลาด");
         }
     };
 
@@ -289,7 +239,6 @@ const ProfilePage = () => {
         }
     };
 
-    // ========== โพสต์แบบเดียวกับ Home ==========
     const resetPostForm = () => {
         setContent("");
         setImage(null);
@@ -463,7 +412,6 @@ const ProfilePage = () => {
         reader.readAsDataURL(file);
     };
 
-    // ========== แก้ไขโปรไฟล์ ==========
     const fileToBase64 = (file, callback) => {
         const reader = new FileReader();
         reader.onloadend = () => callback(reader.result);
@@ -479,7 +427,17 @@ const ProfilePage = () => {
     const handleCoverPicChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        fileToBase64(file, setCoverPic);
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert("รูปใหญ่เกิน 5MB");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setCoverPic(reader.result);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSaveProfile = async (e) => {
@@ -725,31 +683,65 @@ const ProfilePage = () => {
                                 className="w-full h-full object-cover"
                             />
                         ) : null}
+
+                        {isMyProfile && (
+                            <label className="absolute top-4 right-4 z-40 bg-black/70 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-black shadow-lg">
+                                เปลี่ยนภาพปก
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleCoverPicChange}
+                                    className="hidden"
+                                />
+                            </label>
+                        )}
                     </div>
 
                     <div className="px-6 pb-6 relative">
                         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between -mt-20 gap-4 relative z-20">
                             <div className="flex flex-col md:flex-row md:items-end gap-4">
-                                {(profilePic || profile?.profilePic) ? (
-                                    <img
-                                        src={getMediaUrl(profilePic || profile?.profilePic)}
-                                        alt={profile.name}
-                                        className="relative z-30 w-36 h-36 rounded-full border-4 border-white object-cover bg-white shadow-lg"
-                                    />
-                                ) : (
-                                    <div className="relative z-30 w-36 h-36 rounded-full border-4 border-white bg-blue-500 text-white flex items-center justify-center text-4xl font-bold shadow-lg">
-                                        {profile?.name?.charAt(0)?.toUpperCase() || "U"}
-                                    </div>
-                                )}
-
-                                <div className="pb-2">
-                                    <h1 className="text-3xl font-bold text-gray-800">
-                                        {profile.name}
-                                    </h1>
-                                    <p className="text-gray-500">{profile.email}</p>
-                                    {profile.bio && (
-                                        <p className="mt-2 text-gray-700 max-w-2xl">{profile.bio}</p>
+                                <div className="relative z-30 w-36 h-36">
+                                    {profilePic || profile?.profilePic ? (
+                                        <img
+                                            src={getMediaUrl(profilePic || profile?.profilePic)}
+                                            alt={profile.name}
+                                            className="w-36 h-36 rounded-full border-4 border-white object-cover bg-white shadow-lg"
+                                        />
+                                    ) : (
+                                        <div className="w-36 h-36 rounded-full border-4 border-white bg-blue-500 text-white flex items-center justify-center text-4xl font-bold shadow-lg">
+                                            {profile?.name?.charAt(0)?.toUpperCase() || "U"}
+                                        </div>
                                     )}
+
+                                    {isMyProfile && (
+                                        <label className="absolute bottom-2 right-2 h-10 w-10 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center cursor-pointer shadow-lg transition z-40">
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleProfilePicChange}
+                                                className="hidden"
+                                            />
+                                            <span className="text-sm">✏️</span>
+                                        </label>
+                                    )}
+                                </div>
+
+                                <div className="pb-2 max-w-2xl">
+                                    <div className="mt-4 bg-gray-50 border border-gray-20 rounded-2xl">
+                                        <h1 className="text-2xl font-bold text-gray-800 text-center">
+                                            {profile.name}
+                                        </h1>
+                                    </div>
+
+                                    <div className="mt-4 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
+                                            แนะนำตัว
+                                        </p>
+                                        <p className="text-gray-700 whitespace-pre-wrap break-words">
+                                            {profile.bio?.trim() ? profile.bio : "ยังไม่มีข้อมูลแนะนำตัว"}
+                                        </p>
+                                    </div>
+                                    <p className="text-gray-500 mt-1">{profile.email}</p>
                                 </div>
                             </div>
 
@@ -763,15 +755,36 @@ const ProfilePage = () => {
                                     </Link>
                                 ) : (
                                     <>
-                                        <button
-                                            onClick={handleFollow}
-                                            className={`px-5 py-2.5 rounded-xl text-white cursor-pointer ${isFollowing
-                                                ? "bg-gray-500"
-                                                : "bg-blue-500 hover:bg-blue-600"
-                                                }`}
-                                        >
-                                            {isFollowing ? "กำลังติดตาม" : "ติดตาม"}
-                                        </button>
+                                        {loadingFriendStatus ? (
+                                            <button
+                                                disabled
+                                                className="px-5 py-2.5 rounded-xl bg-gray-300 text-gray-700"
+                                            >
+                                                กำลังตรวจสอบ...
+                                            </button>
+                                        ) : isFriend ? (
+                                            <button
+                                                disabled
+                                                className="px-5 py-2.5 rounded-xl bg-green-500 text-white cursor-default"
+                                            >
+                                                เป็นเพื่อนกันแล้ว
+                                            </button>
+                                        ) : isRequestSent ? (
+                                            <button
+                                                disabled
+                                                className="px-5 py-2.5 rounded-xl bg-yellow-500 text-white cursor-default"
+                                            >
+                                                ส่งคำขอแล้ว
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleSendFriendRequest}
+                                                disabled={sendingRequest}
+                                                className="px-5 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white cursor-pointer"
+                                            >
+                                                {sendingRequest ? "กำลังส่งคำขอ..." : "เพิ่มเพื่อน"}
+                                            </button>
+                                        )}
 
                                         <button
                                             onClick={handleStartChat}
@@ -814,11 +827,9 @@ const ProfilePage = () => {
                         {isMyProfile && (
                             <div className="bg-white rounded-2xl shadow p-4">
                                 <div className="flex items-center gap-3">
-                                    {(userData?.profilePic || profile?.profilePic) ? (
+                                    {userData?.profilePic || profile?.profilePic ? (
                                         <img
-                                            src={getMediaUrl(
-                                                userData?.profilePic || profile?.profilePic
-                                            )}
+                                            src={getMediaUrl(userData?.profilePic || profile?.profilePic)}
                                             alt={userData?.name}
                                             className="w-12 h-12 rounded-full object-cover border"
                                         />
@@ -931,18 +942,7 @@ const ProfilePage = () => {
                                 </h2>
 
                                 <form onSubmit={handleSaveProfile} className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            ชื่อ
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={name}
-                                            onChange={(e) => setName(e.target.value)}
-                                            className="w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
-                                            placeholder="ชื่อของคุณ"
-                                        />
-                                    </div>
+
 
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -955,44 +955,6 @@ const ProfilePage = () => {
                                             className="w-full border rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
                                             placeholder="แนะนำตัวสั้น ๆ"
                                         />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            รูปโปรไฟล์
-                                        </label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleProfilePicChange}
-                                            className="w-full cursor-pointer"
-                                        />
-                                        {profilePic && (
-                                            <img
-                                                src={getMediaUrl(profilePic)}
-                                                alt="profile preview"
-                                                className="mt-3 w-24 h-24 rounded-full object-cover border"
-                                            />
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            รูปหน้าปก
-                                        </label>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleCoverPicChange}
-                                            className="w-full cursor-pointer"
-                                        />
-                                        {coverPic && (
-                                            <img
-                                                src={getMediaUrl(coverPic)}
-                                                alt="cover preview"
-                                                className="mt-3 w-full h-32 rounded-xl object-cover border"
-                                            />
-                                        )}
                                     </div>
 
                                     <button
@@ -1028,36 +990,15 @@ const ProfilePage = () => {
                                 </div>
 
                                 <div className="mt-5 flex flex-col gap-3">
-                                    {loadingFriendStatus ? (
-                                        <button
-                                            disabled
-                                            className="w-full bg-gray-300 text-gray-700 py-2.5 rounded-xl"
-                                        >
-                                            กำลังตรวจสอบ...
-                                        </button>
-                                    ) : isFriend ? (
-                                        <button
-                                            disabled
-                                            className="w-full bg-green-500 text-white py-2.5 rounded-xl cursor-default"
-                                        >
-                                            เป็นเพื่อนกันแล้ว
-                                        </button>
-                                    ) : isRequestSent ? (
-                                        <button
-                                            disabled
-                                            className="w-full bg-yellow-500 text-white py-2.5 rounded-xl cursor-default"
-                                        >
-                                            ส่งคำขอแล้ว
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={handleSendFriendRequest}
-                                            disabled={sendingRequest}
-                                            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 rounded-xl"
-                                        >
-                                            {sendingRequest ? "กำลังส่งคำขอ..." : "เพิ่มเพื่อน"}
-                                        </button>
-                                    )}
+                                    <div className="bg-gray-50 rounded-2xl p-4 text-sm text-gray-700">
+                                        {loadingFriendStatus
+                                            ? "กำลังตรวจสอบสถานะเพื่อน..."
+                                            : isFriend
+                                                ? "สถานะ: เป็นเพื่อนกันแล้ว"
+                                                : isRequestSent
+                                                    ? "สถานะ: ส่งคำขอเป็นเพื่อนแล้ว"
+                                                    : "สถานะ: ยังไม่ได้เป็นเพื่อน"}
+                                    </div>
 
                                     <button
                                         onClick={handleStartChat}

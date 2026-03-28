@@ -53,6 +53,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    coverPic: {
+      type: String,
+      default: "",
+    },
+    bio: {
+      type: String,
+      default: "",
+    },
     video: {
       type: String,
       default: "",
