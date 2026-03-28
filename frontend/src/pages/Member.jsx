@@ -33,7 +33,9 @@ const Member = () => {
     // ✅ โหลดโพสต์
     const fetchPosts = async () => {
         try {
-            const res = await fetch(`${API_URL}/posts/all`);
+            const res = await fetch(`${API_URL}/posts/all`, {
+                credentials: "include"
+            });
             const data = await res.json();
 
             if (data.success) {
@@ -62,6 +64,7 @@ const Member = () => {
                 headers: {
                     "Content-Type": "application/json"
                 },
+                credentials: "include",
                 body: JSON.stringify({
                     userId: userData._id,
                     name: userData.name,
@@ -89,7 +92,8 @@ const Member = () => {
     const handleDeletePost = async (postId) => {
         try {
             const res = await fetch(`${API_URL}/posts/${postId}`, {
-                method: "DELETE"
+                method: "DELETE",
+                credentials: "include"
             });
 
             const data = await res.json();
@@ -103,11 +107,10 @@ const Member = () => {
     };
     const handleLike = async (postId) => {
         try {
-            const res = await fetch(`${API_URL}/posts/like/${postId}`, {
+            fetch(`${API_URL}/posts/like/${postId}`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({
                     userId: userData._id
                 })
@@ -132,9 +135,8 @@ const Member = () => {
         try {
             const res = await fetch(`${API_URL}/posts/comment/${postId}`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({
                     userId: userData._id,
                     name: userData.name,
@@ -162,7 +164,8 @@ const Member = () => {
     const handleDeleteComment = async (postId, commentId) => {
         try {
             const res = await fetch(`${API_URL}/posts/comment/${postId}/${commentId}`, {
-                method: "DELETE"
+                method: "DELETE",
+                credentials: "include"
             });
 
             const data = await res.json();
