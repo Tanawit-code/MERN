@@ -28,15 +28,20 @@ const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp-relay.brevo.com",
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
 
 export const sendEmail = async (to, url = "#") => {
   console.log("SEND EMAIL TO:", to);
   console.log("VERIFY URL:", url);
-  console.log("SMTP_HOST:", process.env.SMTP_HOST);
-  console.log("SMTP_PORT:", process.env.SMTP_PORT);
-  console.log("SMTP_USER:", process.env.SMTP_USER);
-  console.log("SENDER_EMAIL:", process.env.SENDER_EMAIL);
-
 
   await transporter.verify();
   console.log("SMTP READY");
@@ -98,7 +103,7 @@ export const register = async (req, res) => {
     try {
       await sendEmail(user.email, verifyUrl);
     } catch (emailError) {
-      console.log("SEND EMAIL ERROR:", emailError.message);
+      console.error("SEND EMAIL ERROR FULL:", emailError);
       return res.status(500).json({
         success: false,
         message: "สมัครสำเร็จแต่ส่งอีเมลยืนยันไม่สำเร็จ",
