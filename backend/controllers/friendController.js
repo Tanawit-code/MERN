@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import friendRequestModel from "../models/friendRequestModel.js";
 import friendshipModel from "../models/friendshipModel.js";
 import userModel from "../models/userModel.js";
+import notificationModel from "../models/notificationModel.js";
 
 const makePairKey = (userA, userB) => {
     return [String(userA), String(userB)].sort().join("_");
@@ -174,6 +175,19 @@ export const sendFriendRequest = async (req, res) => {
             existingRequest.status = "pending";
             await existingRequest.save();
 
+            const senderUser = await userModel
+                .findById(senderId)
+                .select("_id name profilePic");
+
+            await notificationModel.create({
+                user: receiverId,
+                sender: senderId,
+                type: "friend_request",
+                title: "คำขอเป็นเพื่อนใหม่",
+                body: `${senderUser?.name || "มีผู้ใช้"} ส่งคำขอเป็นเพื่อนถึงคุณ`,
+                friendRequestId: existingRequest._id,
+            });
+
             return res.status(200).json({
                 success: true,
                 message: "ส่งคำขอเป็นเพื่อนใหม่สำเร็จ",
@@ -185,6 +199,19 @@ export const sendFriendRequest = async (req, res) => {
             sender: senderId,
             receiver: receiverId,
             status: "pending",
+        });
+
+        const senderUser = await userModel
+            .findById(senderId)
+            .select("_id name profilePic");
+
+        await notificationModel.create({
+            user: receiverId,
+            sender: senderId,
+            type: "friend_request",
+            title: "คำขอเป็นเพื่อนใหม่",
+            body: `${senderUser?.name || "มีผู้ใช้"} ส่งคำขอเป็นเพื่อนถึงคุณ`,
+            friendRequestId: request._id,
         });
 
         return res.status(201).json({
@@ -271,6 +298,13 @@ export const acceptFriendRequest = async (req, res) => {
             });
         }
 
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({
+                success: false,
+                message: "requestId ไม่ถูกต้อง",
+            });
+        }
+
         const request = await friendRequestModel.findById(requestId);
         if (!request) {
             return res.status(404).json({
@@ -282,31 +316,32 @@ export const acceptFriendRequest = async (req, res) => {
         if (String(request.receiver) !== String(userId)) {
             return res.status(403).json({
                 success: false,
-                message: "คุณไม่มีสิทธิ์จัดการคำขอนี้",
+                message: "คุณไม่มีสิทธิ์รับคำขอนี้",
             });
         }
 
         if (request.status !== "pending") {
             return res.status(400).json({
                 success: false,
-                message: "คำขอนี้ถูกจัดการไปแล้ว",
-            });
-        }
-
-        const pairKey = makePairKey(request.sender, request.receiver);
-
-        const existingFriendship = await friendshipModel.findOne({ pairKey });
-        if (!existingFriendship) {
-            await friendshipModel.create({
-                users: [request.sender, request.receiver],
-                pairKey,
+                message: "คำขอนี้ไม่ได้อยู่ในสถานะ pending",
             });
         }
 
         request.status = "accepted";
         await request.save();
 
-        // ✅ เชื่อมระบบ follow ให้ติดตามกันอัตโนมัติ
+        const pairKey = makePairKey(request.sender, request.receiver);
+
+        await friendshipModel.findOneAndUpdate(
+            { pairKey },
+            {
+                user1: request.sender,
+                user2: request.receiver,
+                pairKey,
+            },
+            { upsert: true, new: true }
+        );
+
         await syncFollowBothWays(request.sender, request.receiver);
 
         return res.status(200).json({
@@ -322,7 +357,7 @@ export const acceptFriendRequest = async (req, res) => {
     }
 };
 
-// ปฏิเสธคำขอ
+// ปฏิเสธคำขอเป็นเพื่อน
 export const rejectFriendRequest = async (req, res) => {
     try {
         const userId = req.userId;
@@ -332,6 +367,13 @@ export const rejectFriendRequest = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "กรุณาระบุ requestId",
+            });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({
+                success: false,
+                message: "requestId ไม่ถูกต้อง",
             });
         }
 
@@ -346,14 +388,14 @@ export const rejectFriendRequest = async (req, res) => {
         if (String(request.receiver) !== String(userId)) {
             return res.status(403).json({
                 success: false,
-                message: "คุณไม่มีสิทธิ์จัดการคำขอนี้",
+                message: "คุณไม่มีสิทธิ์ปฏิเสธคำขอนี้",
             });
         }
 
         if (request.status !== "pending") {
             return res.status(400).json({
                 success: false,
-                message: "คำขอนี้ถูกจัดการไปแล้ว",
+                message: "คำขอนี้ไม่ได้อยู่ในสถานะ pending",
             });
         }
 
@@ -386,6 +428,13 @@ export const cancelFriendRequest = async (req, res) => {
             });
         }
 
+        if (!mongoose.Types.ObjectId.isValid(requestId)) {
+            return res.status(400).json({
+                success: false,
+                message: "requestId ไม่ถูกต้อง",
+            });
+        }
+
         const request = await friendRequestModel.findById(requestId);
         if (!request) {
             return res.status(404).json({
@@ -404,12 +453,11 @@ export const cancelFriendRequest = async (req, res) => {
         if (request.status !== "pending") {
             return res.status(400).json({
                 success: false,
-                message: "คำขอนี้ไม่สามารถยกเลิกได้",
+                message: "คำขอนี้ไม่ได้อยู่ในสถานะ pending",
             });
         }
 
-        request.status = "cancelled";
-        await request.save();
+        await request.deleteOne();
 
         return res.status(200).json({
             success: true,
@@ -424,21 +472,22 @@ export const cancelFriendRequest = async (req, res) => {
     }
 };
 
-// ดึงรายชื่อเพื่อน
+// ดึงเพื่อนทั้งหมด
 export const getFriends = async (req, res) => {
     try {
         const userId = req.userId;
 
-        const friendships = await friendshipModel
-            .find({ users: userId })
-            .populate("users", "_id name email profilePic")
-            .sort({ createdAt: -1 });
+        const friendships = await friendshipModel.find({
+            $or: [{ user1: userId }, { user2: userId }],
+        });
 
-        const friends = friendships
-            .map((friendship) =>
-                friendship.users.find((user) => String(user._id) !== String(userId))
-            )
-            .filter(Boolean);
+        const friendIds = friendships.map((item) =>
+            String(item.user1) === String(userId) ? item.user2 : item.user1
+        );
+
+        const friends = await userModel
+            .find({ _id: { $in: friendIds } })
+            .select("_id name email profilePic followers following");
 
         return res.status(200).json({
             success: true,
@@ -474,16 +523,16 @@ export const unfriend = async (req, res) => {
         }
 
         const pairKey = makePairKey(userId, friendId);
-        const deleted = await friendshipModel.findOneAndDelete({ pairKey });
 
-        if (!deleted) {
+        const friendship = await friendshipModel.findOne({ pairKey });
+        if (!friendship) {
             return res.status(404).json({
                 success: false,
-                message: "ไม่พบความเป็นเพื่อนนี้",
+                message: "ไม่พบความเป็นเพื่อน",
             });
         }
 
-        // ✅ เลิกติดตามกันอัตโนมัติเมื่อเลิกเป็นเพื่อน
+        await friendship.deleteOne();
         await unsyncFollowBothWays(userId, friendId);
 
         return res.status(200).json({
@@ -498,44 +547,47 @@ export const unfriend = async (req, res) => {
         });
     }
 };
-
-
+// แนะนำเพื่อน
 export const getSuggestions = async (req, res) => {
     try {
         const userId = req.userId;
 
-        // เพื่อนทั้งหมด
         const friendships = await friendshipModel.find({
-            users: userId,
+            $or: [{ user1: userId }, { user2: userId }],
         });
 
-        const friendIds = friendships.flatMap((f) =>
-            f.users.map((id) => id.toString())
+        const friendIds = friendships.map((item) =>
+            String(item.user1) === String(userId) ? String(item.user2) : String(item.user1)
         );
 
-        // request ที่เคยส่งไปแล้ว
         const sentRequests = await friendRequestModel.find({
             sender: userId,
             status: "pending",
         });
 
-        const requestedIds = sentRequests.map((r) => r.receiver.toString());
+        const receivedRequests = await friendRequestModel.find({
+            receiver: userId,
+            status: "pending",
+        });
 
-        const excludeIds = [
-            ...friendIds,
-            ...requestedIds,
-            String(userId),
+        const requestedIds = [
+            ...sentRequests.map((item) => String(item.receiver)),
+            ...receivedRequests.map((item) => String(item.sender)),
         ];
 
-        const users = await userModel.find({
-            _id: { $nin: excludeIds },
-        })
-            .select("_id name email profilePic")
+        const excludedIds = [...new Set([String(userId), ...friendIds, ...requestedIds])];
+
+        const suggestions = await userModel
+            .find({
+                _id: { $nin: excludedIds },
+            })
+            .select("_id name email profilePic followers following")
+            .sort({ createdAt: -1 })
             .limit(10);
 
         return res.status(200).json({
             success: true,
-            users,
+            suggestions,
         });
     } catch (error) {
         console.log("getSuggestions error:", error);

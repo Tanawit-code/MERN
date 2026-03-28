@@ -2,13 +2,16 @@ import mongoose from "mongoose";
 
 const friendshipSchema = new mongoose.Schema(
     {
-        users: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "user",
-                required: true,
-            },
-        ],
+        user1: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "user",
+            required: true,
+        },
+        user2: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "user",
+            required: true,
+        },
         pairKey: {
             type: String,
             required: true,
@@ -18,7 +21,9 @@ const friendshipSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-friendshipSchema.index({ users: 1 });
+friendshipSchema.index({ user1: 1 });
+friendshipSchema.index({ user2: 1 });
+friendshipSchema.index({ pairKey: 1 }, { unique: true });
 
 const friendshipModel =
     mongoose.models.Friendship ||

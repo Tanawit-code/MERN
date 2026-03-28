@@ -1,23 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { getImageUrl, API_BASE } from "../config/api";
 import {
     searchUsersApi,
     sendFriendRequestApi,
     getSentFriendRequestsApi,
     getFriendsApi,
 } from "../services/chatApi";
-
-const API_BASE =
-    import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
-
-const getImageUrl = (path) => {
-    if (!path) return "";
-    if (path.startsWith("http")) return path;
-    if (path.startsWith("data:image") || path.startsWith("data:video")) return path;
-    if (path.includes("uploads")) return `${API_BASE}/${path}`;
-    return `${API_BASE}/uploads/${path}`;
-};
 
 function SearchUsers() {
     const [keyword, setKeyword] = useState("");
@@ -96,14 +86,14 @@ function SearchUsers() {
             const data = await res.json();
 
             if (data.success) {
-                setSuggestedUsers(data.users || []);
+                setSuggestedUsers(data.suggestions || []);
             } else {
                 setSuggestedUsers([]);
             }
         } catch (error) {
             console.log(
                 "โหลดรายชื่อแนะนำไม่สำเร็จ",
-                error.response?.data || error.message
+                error.response?.data || error.message || error
             );
             setSuggestedUsers([]);
         } finally {
@@ -120,8 +110,7 @@ function SearchUsers() {
         try {
             setLoading(true);
 
-            await fetchSentRequests();
-            await fetchFriends();
+            await Promise.all([fetchSentRequests(), fetchFriends()]);
 
             const res = await searchUsersApi(keyword);
             setUsers(res.data.users || []);
@@ -144,7 +133,15 @@ function SearchUsers() {
                 [receiverId]: true,
             }));
 
-            setSuggestedUsers((prev) => prev.filter((user) => user._id !== receiverId));
+            setSuggestedUsers((prev) =>
+                prev.filter((user) => user._id !== receiverId)
+            );
+
+            setUsers((prev) =>
+                prev.map((user) =>
+                    user._id === receiverId ? { ...user, requestSent: true } : user
+                )
+            );
 
             alert(res.data.message || "ส่งคำขอสำเร็จ");
         } catch (error) {
@@ -152,7 +149,9 @@ function SearchUsers() {
 
             if (message === "ส่งคำขอไปแล้ว") {
                 setSentRequests((prev) => ({ ...prev, [receiverId]: true }));
-                setSuggestedUsers((prev) => prev.filter((user) => user._id !== receiverId));
+                setSuggestedUsers((prev) =>
+                    prev.filter((user) => user._id !== receiverId)
+                );
             }
 
             if (message === "เป็นเพื่อนกันอยู่แล้ว") {
@@ -162,7 +161,9 @@ function SearchUsers() {
                     delete updated[receiverId];
                     return updated;
                 });
-                setSuggestedUsers((prev) => prev.filter((user) => user._id !== receiverId));
+                setSuggestedUsers((prev) =>
+                    prev.filter((user) => user._id !== receiverId)
+                );
             }
 
             alert(message);
@@ -265,7 +266,9 @@ function SearchUsers() {
                 >
                     <Link
                         to={`/profile/${user._id}`}
-                        className={`rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 ${compact ? "px-3 py-2 text-xs font-semibold" : "px-4 py-2 text-sm font-semibold"
+                        className={`rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 ${compact
+                                ? "px-3 py-2 text-xs font-semibold"
+                                : "px-4 py-2 text-sm font-semibold"
                             }`}
                     >
                         ดูโปรไฟล์
@@ -288,7 +291,6 @@ function SearchUsers() {
 
             <div className="mx-auto max-w-7xl px-4 py-6 lg:px-6">
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-                    {/* ฝั่งซ้าย */}
                     <div className="min-w-0 space-y-6">
                         <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
                             <div className="mb-5">
@@ -325,7 +327,9 @@ function SearchUsers() {
                                     <h2 className="text-xl font-bold text-slate-800">
                                         ผลการค้นหา
                                     </h2>
-                                    <p className="mt-2 text-sm text-slate-500">{resultCountText}</p>
+                                    <p className="mt-2 text-sm text-slate-500">
+                                        {resultCountText}
+                                    </p>
                                 </div>
                             </div>
 
@@ -349,7 +353,6 @@ function SearchUsers() {
                         </div>
                     </div>
 
-                    {/* ฝั่งขวา */}
                     <aside className="xl:sticky xl:top-24 xl:self-start">
                         <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
                             <div className="mb-4 flex items-start justify-between gap-3">
@@ -380,7 +383,9 @@ function SearchUsers() {
                                 </div>
                             ) : (
                                 <div className="max-h-[70vh] space-y-3 overflow-y-auto pr-1">
-                                    {suggestedUsers.map((user) => renderUserCard(user, true))}
+                                    {suggestedUsers.map((user) =>
+                                        renderUserCard(user, true)
+                                    )}
                                 </div>
                             )}
                         </div>

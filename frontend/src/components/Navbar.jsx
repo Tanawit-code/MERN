@@ -1,28 +1,8 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import { API_BASE } from "../config/api";
-
-
-const getImageUrl = (path) => {
-    if (!path) return "";
-
-    // ถ้าเป็น full URL
-    if (path.startsWith("http")) return path;
-
-    // ถ้าเป็น base64
-    if (path.startsWith("data:image") || path.startsWith("data:video")) {
-        return path;
-    }
-
-    // ถ้ามี uploads อยู่แล้ว
-    if (path.includes("uploads")) {
-        return `${API_BASE}/${path}`;
-    }
-
-    // default
-    return `${API_BASE}/uploads/${path}`;
-};
+import { getImageUrl } from "../config/api";
+import NotificationBell from "./NotificationBell";
 
 const Navbar = () => {
     const { userData, logout } = useContext(AppContext);
@@ -90,7 +70,6 @@ const Navbar = () => {
             >
                 {!isMobile ? (
                     <>
-                        {/* ซ้าย: Logo */}
                         <div
                             style={{
                                 flex: 1,
@@ -112,7 +91,6 @@ const Navbar = () => {
                             </Link>
                         </div>
 
-                        {/* กลาง: Menu */}
                         <div
                             style={{
                                 flex: 1,
@@ -122,14 +100,26 @@ const Navbar = () => {
                                 gap: "10px",
                             }}
                         >
-                            <Link to="/" style={linkStyle("/")}>หน้าแรก</Link>
-                            <Link to="/search" style={linkStyle("/search")}>ค้นหาผู้ใช้</Link>
-                            <Link to="/friend-requests" style={linkStyle("/friend-requests")}>คำขอเพื่อน</Link>
-                            <Link to="/friends" style={linkStyle("/friends")}>เพื่อน</Link>
-                            <Link to="/groups" style={linkStyle("/groups")}>ค้นหากลุ่ม</Link>
+                            <Link to="/" style={linkStyle("/")}>
+                                หน้าแรก
+                            </Link>
+                            <Link to="/search" style={linkStyle("/search")}>
+                                ค้นหาผู้ใช้
+                            </Link>
+                            <Link
+                                to="/friend-requests"
+                                style={linkStyle("/friend-requests")}
+                            >
+                                คำขอเพื่อน
+                            </Link>
+                            <Link to="/friends" style={linkStyle("/friends")}>
+                                เพื่อน
+                            </Link>
+                            <Link to="/groups" style={linkStyle("/groups")}>
+                                ค้นหากลุ่ม
+                            </Link>
                         </div>
 
-                        {/* ขวา: Profile + Logout */}
                         <div
                             style={{
                                 flex: 1,
@@ -139,6 +129,8 @@ const Navbar = () => {
                                 gap: "12px",
                             }}
                         >
+                            <NotificationBell />
+
                             <Link
                                 to="/profilepage"
                                 style={{
@@ -150,8 +142,6 @@ const Navbar = () => {
                             >
                                 {userData?.name || "User"}
                             </Link>
-
-
 
                             <Link
                                 to="/profilepage"
@@ -209,7 +199,7 @@ const Navbar = () => {
                                     padding: "8px 14px",
                                     borderRadius: "10px",
                                     textDecoration: "none",
-                                    fontWeight: "600"
+                                    fontWeight: "600",
                                 }}
                             >
                                 ⚙️ ตั้งค่า
@@ -218,7 +208,6 @@ const Navbar = () => {
                     </>
                 ) : (
                     <>
-                        {/* Mobile top bar */}
                         <Link
                             to="/"
                             style={{
@@ -250,7 +239,6 @@ const Navbar = () => {
                 )}
             </div>
 
-            {/* Mobile Menu */}
             {isMobile && isOpen && (
                 <div
                     style={{
@@ -324,10 +312,23 @@ const Navbar = () => {
                         </div>
                     </div>
 
-                    <Link to="/" style={mobileLinkStyle("/")} onClick={() => setIsOpen(false)}>
+                    <NotificationBell
+                        mobile={true}
+                        onItemClick={() => setIsOpen(false)}
+                    />
+
+                    <Link
+                        to="/"
+                        style={mobileLinkStyle("/")}
+                        onClick={() => setIsOpen(false)}
+                    >
                         หน้าแรก
                     </Link>
-                    <Link to="/search" style={mobileLinkStyle("/search")} onClick={() => setIsOpen(false)}>
+                    <Link
+                        to="/search"
+                        style={mobileLinkStyle("/search")}
+                        onClick={() => setIsOpen(false)}
+                    >
                         ค้นหาผู้ใช้
                     </Link>
                     <Link
@@ -337,11 +338,27 @@ const Navbar = () => {
                     >
                         คำขอเพื่อน
                     </Link>
-                    <Link to="/friends" style={mobileLinkStyle("/friends")} onClick={() => setIsOpen(false)}>
+                    <Link
+                        to="/friends"
+                        style={mobileLinkStyle("/friends")}
+                        onClick={() => setIsOpen(false)}
+                    >
                         เพื่อน
                     </Link>
-                    <Link to="/groups" style={mobileLinkStyle("/groups")} onClick={() => setIsOpen(false)}>
+                    <Link
+                        to="/groups"
+                        style={mobileLinkStyle("/groups")}
+                        onClick={() => setIsOpen(false)}
+                    >
                         ค้นหากลุ่ม
+                    </Link>
+
+                    <Link
+                        to="/settings"
+                        style={mobileLinkStyle("/settings")}
+                        onClick={() => setIsOpen(false)}
+                    >
+                        ⚙️ ตั้งค่า
                     </Link>
 
                     <button

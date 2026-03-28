@@ -1,12 +1,8 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
-import { getMediaUrl, hasMedia } from "../utils/media";
 import Navbar from "../components/Navbar";
-
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
-
+import { API_BASE, getImageUrl } from "../config/api";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -101,7 +97,7 @@ const Home = () => {
       const data = await res.json();
 
       if (data.success) {
-        setSuggestedUsers(data.users || []);
+        setSuggestedUsers(data.suggestions || []);
       } else {
         setSuggestedUsers([]);
       }
@@ -131,6 +127,7 @@ const Home = () => {
       }
 
       setSuggestedUsers((prev) => prev.filter((u) => u._id !== receiverId));
+      alert(data.message || "ส่งคำขอสำเร็จ");
     } catch (err) {
       console.error("SEND FRIEND REQUEST ERROR:", err);
       alert(err.message);
@@ -330,7 +327,7 @@ const Home = () => {
             <div className="flex items-center gap-3">
               {userData?.profilePic ? (
                 <img
-                  src={getMediaUrl(userData?.profilePic)}
+                  src={getImageUrl(userData.profilePic)}
                   alt={userData?.name}
                   className="w-12 h-12 rounded-full object-cover border"
                 />
@@ -419,10 +416,10 @@ const Home = () => {
             <div key={post._id} className="bg-white rounded-2xl shadow p-4">
               <div className="flex justify-between items-start">
                 <div className="flex gap-3 items-center">
-                  <Link to={`/profile/${post.userId?._id}`}>
+                  <Link to={`/profile/${post.userId?._id || post.userId}`}>
                     {post.userId?.profilePic ? (
                       <img
-                        src={getMediaUrl(post.userId?.profilePic)}
+                        src={getImageUrl(post.userId.profilePic)}
                         alt={post.userId?.name}
                         className="w-12 h-12 rounded-full object-cover border"
                       />
@@ -435,10 +432,10 @@ const Home = () => {
 
                   <div>
                     <Link
-                      to={`/profile/${post.userId?._id}`}
+                      to={`/profile/${post.userId?._id || post.userId}`}
                       className="font-semibold text-gray-800 hover:text-blue-600"
                     >
-                      {post.userId?.name}
+                      {post.userId?.name || post.name || "ผู้ใช้"}
                     </Link>
                     <p className="text-xs text-gray-500">
                       {new Date(post.createdAt).toLocaleString()}
@@ -480,7 +477,7 @@ const Home = () => {
 
               {post.image && (
                 <img
-                  src={post.image}
+                  src={getImageUrl(post.image)}
                   alt="post"
                   className="mt-4 w-full rounded-xl max-h-[500px] object-cover border"
                 />
@@ -488,19 +485,18 @@ const Home = () => {
 
               {post.video && (
                 <video
+                  src={getImageUrl(post.video)}
                   controls
                   className="mt-4 w-full rounded-xl max-h-[500px] border bg-black"
-                >
-                  <source src={post.video} />
-                </video>
+                />
               )}
 
               <div className="mt-4 flex items-center gap-6 text-sm text-gray-600 border-t pt-3">
                 <button
                   onClick={() => handleLike(post._id)}
                   className={`hover:text-blue-600 cursor-pointer ${post.likes?.includes(userData._id)
-                    ? "text-blue-600 font-semibold cursor-pointer"
-                    : ""
+                      ? "text-blue-600 font-semibold cursor-pointer"
+                      : ""
                     }`}
                 >
                   ถูกใจ {post.likes?.length || 0}
@@ -517,7 +513,9 @@ const Home = () => {
                       [post._id]: e.target.value,
                     })
                   }
-                  onKeyDown={(e) => e.key === "Enter" && handleComment(post._id)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && handleComment(post._id)
+                  }
                   className="flex-1 border rounded px-3 py-2"
                   placeholder="เขียนความคิดเห็น..."
                 />
@@ -538,7 +536,7 @@ const Home = () => {
                         <div className="flex gap-3">
                           {c.profilePic ? (
                             <img
-                              src={getMediaUrl(c.profilePic)}
+                              src={getImageUrl(c.profilePic)}
                               alt={c.name}
                               className="w-9 h-9 rounded-full object-cover border"
                             />
@@ -552,7 +550,9 @@ const Home = () => {
                             <p className="font-medium text-sm text-gray-800">
                               {c.name}
                             </p>
-                            <p className="text-sm text-gray-700">{c.text}</p>
+                            <p className="text-sm text-gray-700">
+                              {c.text}
+                            </p>
                             <p className="text-xs text-gray-500 mt-1">
                               {new Date(c.createdAt).toLocaleString()}
                             </p>
@@ -563,7 +563,9 @@ const Home = () => {
                           <div className="relative">
                             <button
                               onClick={() =>
-                                setOpenMenu(openMenu === c._id ? null : c._id)
+                                setOpenMenu(
+                                  openMenu === c._id ? null : c._id
+                                )
                               }
                               className="text-gray-500 hover:text-black cursor-pointer"
                             >
@@ -574,7 +576,10 @@ const Home = () => {
                               <div className="absolute right-0 mt-2 bg-white border rounded-lg shadow z-10">
                                 <button
                                   onClick={() =>
-                                    handleDeleteComment(post._id, c._id)
+                                    handleDeleteComment(
+                                      post._id,
+                                      c._id
+                                    )
                                   }
                                   className="block px-3 py-2 text-red-500 hover:bg-gray-100 w-full text-left text-xs cursor-pointer"
                                 >
@@ -599,7 +604,7 @@ const Home = () => {
             <div className="flex items-center gap-3">
               {userData?.profilePic ? (
                 <img
-                  src={getMediaUrl(userData?.profilePic)}
+                  src={getImageUrl(userData.profilePic)}
                   alt={userData?.name}
                   className="w-12 h-12 rounded-full object-cover border"
                 />
@@ -622,6 +627,13 @@ const Home = () => {
               >
                 โปรไฟล์ของฉัน
               </Link>
+
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-center"
+              >
+                ออกจากระบบ
+              </button>
             </div>
           </div>
 
@@ -650,7 +662,7 @@ const Home = () => {
                     >
                       {friend.profilePic ? (
                         <img
-                          src={getMediaUrl(friend.profilePic)}
+                          src={getImageUrl(friend.profilePic)}
                           alt={friend.name}
                           className="w-11 h-11 rounded-full object-cover border"
                         />
@@ -706,7 +718,7 @@ const Home = () => {
                       >
                         {user.profilePic ? (
                           <img
-                            src={getMediaUrl(user.profilePic)}
+                            src={getImageUrl(user.profilePic)}
                             alt={user.name}
                             className="w-11 h-11 rounded-full object-cover border"
                           />
@@ -727,7 +739,9 @@ const Home = () => {
 
                     <div className="mt-3 flex gap-2">
                       <button
-                        onClick={() => handleSendFriendRequest(user._id)}
+                        onClick={() =>
+                          handleSendFriendRequest(user._id)
+                        }
                         className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-2 rounded-lg cursor-pointer"
                       >
                         เพิ่มเพื่อน

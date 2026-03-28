@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import messageModel from "../models/messageModel.js";
 import conversationModel from "../models/conversationModel.js";
+import notificationModel from "../models/notificationModel.js";
 
 export const sendMessage = async (req, res) => {
     try {
@@ -61,6 +62,26 @@ export const sendMessage = async (req, res) => {
         const populatedMessage = await messageModel
             .findById(message._id)
             .populate("sender", "_id name email profilePic");
+
+        const senderName =
+            populatedMessage?.sender?.name || "มีผู้ใช้ส่งข้อความ";
+
+        const receivers = conversation.members.filter(
+            (member) => String(member) !== String(userId)
+        );
+
+        if (receivers.length > 0) {
+            const notificationDocs = receivers.map((receiverId) => ({
+                user: receiverId,
+                sender: userId,
+                type: "new_message",
+                title: "ข้อความใหม่",
+                body: `${senderName} ส่งข้อความหาคุณ`,
+                conversationId: conversation._id,
+            }));
+
+            await notificationModel.insertMany(notificationDocs);
+        }
 
         return res.status(201).json({
             success: true,

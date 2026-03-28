@@ -5,28 +5,7 @@ import {
     createPrivateConversationApi,
 } from "../services/chatApi";
 import { useNavigate, Link } from "react-router-dom";
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:5000";
-
-const getImageUrl = (path) => {
-    if (!path) return "";
-
-    // ถ้าเป็น full URL
-    if (path.startsWith("http")) return path;
-
-    // ถ้าเป็น base64
-    if (path.startsWith("data:image") || path.startsWith("data:video")) {
-        return path;
-    }
-
-    // ถ้ามี uploads อยู่แล้ว
-    if (path.includes("uploads")) {
-        return `${API_BASE}/${path}`;
-    }
-
-    // default
-    return `${API_BASE}/uploads/${path}`;
-};
+import { getImageUrl } from "../config/api";
 
 function FriendsList() {
     const [friends, setFriends] = useState([]);
