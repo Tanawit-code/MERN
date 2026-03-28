@@ -8,8 +8,6 @@
 // อัปเดตโปรไฟล์ updateProfile
 // ลืมรหัสผ่าน / รีเซ็ตรหัสผ่าน
 
-// เวลาล็อกอินสำเร็จ controller นี้จะสร้าง JWT แล้ว set cookie ชื่อ token เพื่อให้ middleware ใช้ตรวจสอบ session ต่อได้
-
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
@@ -38,7 +36,6 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-
 export const sendEmail = async (to, url = "#") => {
   console.log("SEND EMAIL TO:", to);
   console.log("VERIFY URL:", url);
@@ -66,18 +63,78 @@ export const sendEmail = async (to, url = "#") => {
   console.log("MAIL SENT:", info.response);
 };
 
+export const sendRegisterSuccessEmail = async (to, name = "ผู้ใช้") => {
+  await transporter.verify();
+  console.log("SMTP READY");
+
+  const info = await transporter.sendMail({
+    from: process.env.SENDER_EMAIL,
+    to,
+    subject: "สมัครสมาชิกสำเร็จ",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.7;">
+        <h2>สมัครสมาชิกสำเร็จ 🎉</h2>
+        <p>สวัสดี ${name}</p>
+        <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
+        <p>อีเมลนี้เป็นเพียงการแจ้งเตือนว่าการสมัครสมาชิกสำเร็จ</p>
+      </div>
+    `,
+  });
+
+  console.log("REGISTER MAIL SENT:", info.response);
+};
+
 export const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, confirmPassword } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !confirmPassword) {
       return res.status(400).json({
         success: false,
-        message: "กรุณากรอก name, email และ password ให้ครบ",
+        message: "กรุณากรอก name, email, password และ confirmPassword ให้ครบ",
       });
     }
 
-    const exists = await userModel.findOne({ email });
+    if (name.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: "รูปแบบอีเมลไม่ถูกต้อง",
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+      });
+    }
+
+    const hasUpperCase = /[A-Z]/.test(password);
+    if (!hasUpperCase) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว",
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน",
+      });
+    }
+
+    const exists = await userModel.findOne({ email: normalizedEmail });
     if (exists) {
       return res.status(400).json({
         success: false,
@@ -88,13 +145,20 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await userModel.create({
-      name,
-      email,
+      name: name.trim(),
+      email: normalizedEmail,
       password: hashedPassword,
       verificationToken: "",
       verificationTokenExpire: 0,
       isVerified: true,
     });
+
+    try {
+      await sendRegisterSuccessEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error("REGISTER MAIL ERROR:", emailError);
+      // ไม่ให้สมัครล้มเพราะส่งเมลไม่สำเร็จ
+    }
 
     const token = createToken(user._id);
     res.cookie("token", token, cookieOptions);
@@ -168,7 +232,7 @@ export const resendVerificationEmail = async (req, res) => {
       });
     }
 
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ email: email.trim().toLowerCase() });
 
     if (!user) {
       return res.status(404).json({
@@ -191,8 +255,7 @@ export const resendVerificationEmail = async (req, res) => {
 
     await user.save();
 
-    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:5000"
-      }/api/auth/verify-email?token=${verifyToken}`;
+    const verifyUrl = `${process.env.BACKEND_URL || "http://localhost:5000"}/api/auth/verify-email?token=${verifyToken}`;
 
     await sendEmail(user.email, verifyUrl);
 
@@ -221,7 +284,9 @@ export const login = async (req, res) => {
       });
     }
 
-    const user = await userModel.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const user = await userModel.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -353,9 +418,9 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    const user = await userModel.findOne({ email });
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await userModel.findOne({ email: normalizedEmail });
 
-    // กันการเดาอีเมล: ตอบ success เหมือนกัน
     if (!user) {
       return res.status(200).json({
         success: true,
@@ -366,11 +431,10 @@ export const forgotPassword = async (req, res) => {
     const resetToken = crypto.randomBytes(32).toString("hex");
 
     user.resetOTP = resetToken;
-    user.resetOTPExpire = Date.now() + 60 * 60 * 1000; // 1 ชั่วโมง
+    user.resetOTPExpire = Date.now() + 60 * 60 * 1000;
     await user.save();
 
-    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"
-      }/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:5173"}/reset-password?token=${resetToken}`;
 
     await sendResetPasswordEmail(user.email, resetUrl);
 
@@ -398,10 +462,17 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    if (newPassword.length < 6) {
+    if (newPassword.length < 8) {
       return res.status(400).json({
         success: false,
-        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร",
+        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร",
+      });
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านใหม่ต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว",
       });
     }
 
@@ -437,6 +508,7 @@ export const resetPassword = async (req, res) => {
     });
   }
 };
+
 export const sendResetPasswordEmail = async (to, url = "#") => {
   await transporter.verify();
   console.log("SMTP READY");
@@ -460,6 +532,7 @@ export const sendResetPasswordEmail = async (to, url = "#") => {
 
   console.log("RESET MAIL SENT:", info.response);
 };
+
 export const requestAccountChange = async (req, res) => {
   try {
     const userId = req.userId;
@@ -470,7 +543,6 @@ export const requestAccountChange = async (req, res) => {
       return res.status(404).json({ success: false, message: "ไม่พบผู้ใช้" });
     }
 
-    // เปลี่ยนชื่อได้เลย
     if (name && name !== user.name) {
       user.name = name;
     }
@@ -483,7 +555,6 @@ export const requestAccountChange = async (req, res) => {
       return res.json({ success: true, message: "อัปเดตสำเร็จ" });
     }
 
-    // ตรวจ email ซ้ำ
     if (emailChanged) {
       const exist = await userModel.findOne({ email });
       if (exist && exist._id.toString() !== userId) {
@@ -495,13 +566,25 @@ export const requestAccountChange = async (req, res) => {
       user.pendingEmail = email;
     }
 
-    // hash password ก่อนเก็บ
     if (passwordChanged) {
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร",
+        });
+      }
+
+      if (!/[A-Z]/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: "รหัสผ่านใหม่ต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว",
+        });
+      }
+
       const hashed = await bcrypt.hash(password, 10);
       user.pendingPassword = hashed;
     }
 
-    // สร้าง token
     const token = crypto.randomBytes(32).toString("hex");
     user.changeVerifyToken = token;
     user.changeVerifyExpire = Date.now() + 30 * 60 * 1000;
@@ -522,6 +605,7 @@ export const requestAccountChange = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
 export const confirmAccountChange = async (req, res) => {
   try {
     const { token } = req.query;
@@ -558,5 +642,95 @@ export const confirmAccountChange = async (req, res) => {
   } catch (err) {
     console.log("CONFIRM CHANGE ERROR:", err);
     return res.status(500).json({ success: false, message: err.message });
+  }
+};
+export const sendPasswordChangedEmail = async (to, name = "ผู้ใช้") => {
+  await transporter.verify();
+  console.log("SMTP READY");
+
+  const info = await transporter.sendMail({
+    from: process.env.SENDER_EMAIL,
+    to,
+    subject: "มีการเปลี่ยนรหัสผ่านบัญชีของคุณ",
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>เปลี่ยนรหัสผ่านสำเร็จ</h2>
+        <p>สวัสดี ${name}</p>
+        <p>รหัสผ่านบัญชีของคุณถูกเปลี่ยนเรียบร้อยแล้ว</p>
+        <p>หากคุณไม่ได้เป็นผู้เปลี่ยน กรุณาเข้าสู่ระบบและเปลี่ยนรหัสผ่านทันที</p>
+      </div>
+    `,
+  });
+
+  console.log("PASSWORD CHANGED MAIL SENT:", info.response);
+};
+export const changePasswordDirect = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { newPassword, confirmPassword } = req.body;
+
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกรหัสผ่านใหม่และยืนยันรหัสผ่าน",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร",
+      });
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านใหม่ต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "ยืนยันรหัสผ่านไม่ตรงกัน",
+      });
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบผู้ใช้",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+
+    // ล้างค่า pending เดิมเผื่อมีค้าง
+    user.pendingPassword = "";
+    user.changeVerifyToken = "";
+    user.changeVerifyExpire = 0;
+
+    await user.save();
+
+    try {
+      await sendPasswordChangedEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error("PASSWORD CHANGED MAIL ERROR:", emailError);
+      // ไม่ให้การเปลี่ยนรหัสล้มเพราะส่งเมลไม่สำเร็จ
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "เปลี่ยนรหัสผ่านสำเร็จ และส่งอีเมลแจ้งเตือนแล้ว",
+    });
+  } catch (error) {
+    console.log("CHANGE PASSWORD DIRECT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

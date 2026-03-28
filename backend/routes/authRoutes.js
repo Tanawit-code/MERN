@@ -13,6 +13,7 @@ import {
   resetPassword,
   requestAccountChange,
   confirmAccountChange,
+  changePasswordDirect,
 } from "../controllers/authController.js";
 import userAuth from "../middleware/authMiddleware.js";
 import upload from "../middleware/multer.js";
@@ -30,5 +31,5 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.put("/request-account-change", userAuth, requestAccountChange);
 router.get("/confirm-change", confirmAccountChange);
-
+router.put("/change-password", userAuth, changePasswordDirect);
 export default router;

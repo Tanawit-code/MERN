@@ -12,6 +12,10 @@ const LoginPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [showResend, setShowResend] = useState(false);
@@ -20,7 +24,25 @@ const LoginPage = () => {
     setName("");
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setShowResend(false);
+  };
+
+  const validatePassword = (value) => {
+    const hasUpperCase = /[A-Z]/.test(value);
+    const hasMinLength = value.length >= 8;
+
+    if (!hasMinLength) {
+      return "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
+    }
+
+    if (!hasUpperCase) {
+      return "รหัสผ่านต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว";
+    }
+
+    return null;
   };
 
   const handleResendVerification = async () => {
@@ -53,20 +75,40 @@ const LoginPage = () => {
       setLoading(true);
 
       if (mode === "signup") {
+        if (!name.trim()) {
+          toast.error("กรุณากรอกชื่อ");
+          setLoading(false);
+          return;
+        }
+
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+          toast.error(passwordError);
+          setLoading(false);
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          toast.error("รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน");
+          setLoading(false);
+          return;
+        }
+
         const { data } = await axios.post(
           `${BackendUrl}/api/auth/register`,
           {
             name,
             email,
             password,
+            confirmPassword,
           },
           { withCredentials: true }
         );
 
         if (data.success) {
           toast.success(data.message || "สมัครสมาชิกสำเร็จ");
-          navigate("/check-email", { state: { email } });
           resetForm();
+          navigate("/");
           return;
         }
 
@@ -165,15 +207,59 @@ const LoginPage = () => {
             <label className="block text-sm font-medium text-slate-700 mb-1">
               รหัสผ่าน
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="กรอกรหัสผ่าน"
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
-              required
-            />
+
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="กรอกรหัสผ่าน"
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3 pr-12 outline-none focus:ring-2 focus:ring-blue-400"
+                required
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 cursor-pointer"
+              >
+                {showPassword ? "🙈" : "👁"}
+              </button>
+            </div>
+
+            {mode === "signup" && (
+              <p className="text-xs text-slate-500 mt-1">
+                รหัสผ่านต้องมีอย่างน้อย 8 ตัว และมีตัวพิมพ์ใหญ่ 1 ตัว
+              </p>
+            )}
           </div>
+
+          {mode === "signup" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                ยืนยันรหัสผ่าน
+              </label>
+
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="กรอกรหัสผ่านอีกครั้ง"
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-3 pr-12 outline-none focus:ring-2 focus:ring-blue-400"
+                  required
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 cursor-pointer"
+                >
+                  {showConfirmPassword ? "🙈" : "👁"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {mode === "login" && (
             <div className="text-right">

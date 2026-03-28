@@ -16,10 +16,62 @@ const SettingsPage = () => {
     const [savingSecurity, setSavingSecurity] = useState(false);
     const [sendingVerify, setSendingVerify] = useState(false);
 
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     useEffect(() => {
         setName(userData?.name || "");
         setEmail(userData?.email || "");
     }, [userData]);
+
+
+    const handleChangePasswordDirect = async (e) => {
+        e.preventDefault();
+
+        if (!newPassword.trim() || !confirmPassword.trim()) {
+            return toast.error("กรุณากรอกรหัสผ่านใหม่ให้ครบ");
+        }
+
+        if (newPassword.length < 8) {
+            return toast.error("รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร");
+        }
+
+        if (!/[A-Z]/.test(newPassword)) {
+            return toast.error("รหัสผ่านใหม่ต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว");
+        }
+
+        if (newPassword !== confirmPassword) {
+            return toast.error("ยืนยันรหัสผ่านไม่ตรงกัน");
+        }
+
+        try {
+            setSavingSecurity(true);
+
+            const { data } = await axios.put(
+                `${BackendUrl}/api/auth/change-password`,
+                {
+                    newPassword,
+                    confirmPassword,
+                },
+                { withCredentials: true }
+            );
+
+            if (data.success) {
+                toast.success(data.message || "เปลี่ยนรหัสผ่านสำเร็จ");
+                setNewPassword("");
+                setConfirmPassword("");
+            } else {
+                toast.error(data.message || "เปลี่ยนรหัสผ่านไม่สำเร็จ");
+            }
+        } catch (error) {
+            toast.error(
+                error.response?.data?.message ||
+                error.message ||
+                "เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน"
+            );
+        } finally {
+            setSavingSecurity(false);
+        }
+    };
 
     const emailChanged = useMemo(() => {
         return (email || "").trim().toLowerCase() !== (userData?.email || "").trim().toLowerCase();
@@ -190,8 +242,8 @@ const SettingsPage = () => {
                                     <div className="mt-2 flex items-center gap-2">
                                         <span
                                             className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${userData?.isVerified
-                                                    ? "bg-green-100 text-green-700"
-                                                    : "bg-red-100 text-red-700"
+                                                ? "bg-green-100 text-green-700"
+                                                : "bg-red-100 text-red-700"
                                                 }`}
                                         >
                                             {userData?.isVerified ? "ยืนยันแล้ว" : "ยังไม่ยืนยัน"}
@@ -253,59 +305,62 @@ const SettingsPage = () => {
 
                         <div className="bg-white rounded-3xl shadow p-6">
                             <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                                เปลี่ยนอีเมล / รหัสผ่าน
+                                เปลี่ยนรหัสผ่าน
                             </h2>
                             <p className="text-gray-500 mb-5">
-                                เมื่อกดบันทึก ระบบจะส่งอีเมลยืนยันให้ก่อน อีเมลหรือรหัสผ่านใหม่จะมีผลหลังจากยืนยันแล้วเท่านั้น
+                                เปลี่ยนรหัสผ่านได้ทันที และระบบจะส่งอีเมลแจ้งเตือนหลังเปลี่ยนสำเร็จ
                             </p>
 
-                            <form onSubmit={handleRequestChange} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        อีเมลใหม่
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        placeholder="กรอกอีเมลใหม่"
-                                        className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
-                                    />
-                                    {emailChanged && (
-                                        <p className="text-sm text-amber-600 mt-2">
-                                            คุณกำลังเปลี่ยนอีเมลจาก {userData?.email}
-                                        </p>
-                                    )}
-                                </div>
-
+                            <form onSubmit={handleChangePasswordDirect} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         รหัสผ่านใหม่
                                     </label>
-                                    <input
-                                        type="password"
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        placeholder="กรอกรหัสผ่านใหม่"
-                                        className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showNewPassword ? "text" : "password"}
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            placeholder="กรอกรหัสผ่านใหม่"
+                                            className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 pr-12 outline-none focus:ring-2 focus:ring-blue-400"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPassword((prev) => !prev)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 cursor-pointer"
+                                        >
+                                            {showNewPassword ? "🙈" : "👁"}
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        รหัสผ่านต้องมีอย่างน้อย 8 ตัว และมีตัวพิมพ์ใหญ่ 1 ตัว
+                                    </p>
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         ยืนยันรหัสผ่านใหม่
                                     </label>
-                                    <input
-                                        type="password"
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-                                        className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-400"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirmPassword ? "text" : "password"}
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+                                            className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 pr-12 outline-none focus:ring-2 focus:ring-blue-400"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600 cursor-pointer"
+                                        >
+                                            {showConfirmPassword ? "🙈" : "👁"}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-sm text-yellow-700">
-                                    หลังจากกดบันทึก กรุณาเปิดอีเมลและกดลิงก์ยืนยันการเปลี่ยนข้อมูล
+                                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-700">
+                                    หลังเปลี่ยนรหัสผ่านสำเร็จ ระบบจะส่งอีเมลแจ้งเตือนไปยังอีเมลของคุณ
                                 </div>
 
                                 <button
@@ -313,9 +368,7 @@ const SettingsPage = () => {
                                     disabled={savingSecurity}
                                     className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-3 rounded-2xl transition disabled:opacity-60 cursor-pointer"
                                 >
-                                    {savingSecurity
-                                        ? "กำลังส่งคำขอ..."
-                                        : "บันทึกและส่งอีเมลยืนยัน"}
+                                    {savingSecurity ? "กำลังบันทึก..." : "เปลี่ยนรหัสผ่าน"}
                                 </button>
                             </form>
                         </div>
