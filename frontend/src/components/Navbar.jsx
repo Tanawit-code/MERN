@@ -98,6 +98,7 @@ const Navbar = () => {
                                 justifyContent: "center",
                                 alignItems: "center",
                                 gap: "10px",
+                                paddingRight: "100px"
                             }}
                         >
                             <Link to="/" style={linkStyle("/")}>
@@ -202,7 +203,7 @@ const Navbar = () => {
                                     fontWeight: "600",
                                 }}
                             >
-                                ⚙️ ตั้งค่า
+                                ⚙️
                             </Link>
                         </div>
                     </>
@@ -239,146 +240,148 @@ const Navbar = () => {
                 )}
             </div>
 
-            {isMobile && isOpen && (
-                <div
-                    style={{
-                        maxWidth: "1400px",
-                        margin: "14px auto 0",
-                        background: "#111827",
-                        borderRadius: "16px",
-                        padding: "14px",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "10px",
-                        boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-                    }}
-                >
+            {
+                isMobile && isOpen && (
                     <div
                         style={{
+                            maxWidth: "1400px",
+                            margin: "14px auto 0",
+                            background: "#111827",
+                            borderRadius: "16px",
+                            padding: "14px",
                             display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            padding: "6px 4px 12px",
-                            borderBottom: "1px solid rgba(255,255,255,0.08)",
-                            marginBottom: "4px",
+                            flexDirection: "column",
+                            gap: "10px",
+                            boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
                         }}
                     >
-                        <Link
-                            to="/profilepage"
-                            onClick={() => setIsOpen(false)}
+                        <div
                             style={{
-                                width: "42px",
-                                height: "42px",
-                                borderRadius: "50%",
-                                overflow: "hidden",
-                                background: "#2563eb",
                                 display: "flex",
                                 alignItems: "center",
-                                justifyContent: "center",
-                                color: "#fff",
-                                textDecoration: "none",
-                                fontWeight: "bold",
-                                flexShrink: 0,
+                                gap: "12px",
+                                padding: "6px 4px 12px",
+                                borderBottom: "1px solid rgba(255,255,255,0.08)",
+                                marginBottom: "4px",
                             }}
                         >
-                            {userData?.profilePic ? (
-                                <img
-                                    src={getImageUrl(userData?.profilePic)}
-                                    alt="profile"
-                                    style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "cover",
-                                    }}
-                                />
-                            ) : (
-                                userData?.name?.charAt(0).toUpperCase() || "U"
-                            )}
-                        </Link>
-
-                        <div>
                             <Link
                                 to="/profilepage"
                                 onClick={() => setIsOpen(false)}
                                 style={{
+                                    width: "42px",
+                                    height: "42px",
+                                    borderRadius: "50%",
+                                    overflow: "hidden",
+                                    background: "#2563eb",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
                                     color: "#fff",
                                     textDecoration: "none",
-                                    fontWeight: "700",
-                                    display: "block",
+                                    fontWeight: "bold",
+                                    flexShrink: 0,
                                 }}
                             >
-                                {userData?.name || "User"}
+                                {userData?.profilePic ? (
+                                    <img
+                                        src={getImageUrl(userData?.profilePic)}
+                                        alt="profile"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover",
+                                        }}
+                                    />
+                                ) : (
+                                    userData?.name?.charAt(0).toUpperCase() || "U"
+                                )}
                             </Link>
+
+                            <div>
+                                <Link
+                                    to="/profilepage"
+                                    onClick={() => setIsOpen(false)}
+                                    style={{
+                                        color: "#fff",
+                                        textDecoration: "none",
+                                        fontWeight: "700",
+                                        display: "block",
+                                    }}
+                                >
+                                    {userData?.name || "User"}
+                                </Link>
+                            </div>
                         </div>
+
+                        <NotificationBell
+                            mobile={true}
+                            onItemClick={() => setIsOpen(false)}
+                        />
+
+                        <Link
+                            to="/"
+                            style={mobileLinkStyle("/")}
+                            onClick={() => setIsOpen(false)}
+                        >
+                            หน้าแรก
+                        </Link>
+                        <Link
+                            to="/search"
+                            style={mobileLinkStyle("/search")}
+                            onClick={() => setIsOpen(false)}
+                        >
+                            ค้นหาผู้ใช้
+                        </Link>
+                        <Link
+                            to="/friend-requests"
+                            style={mobileLinkStyle("/friend-requests")}
+                            onClick={() => setIsOpen(false)}
+                        >
+                            คำขอเพื่อน
+                        </Link>
+                        <Link
+                            to="/friends"
+                            style={mobileLinkStyle("/friends")}
+                            onClick={() => setIsOpen(false)}
+                        >
+                            เพื่อน
+                        </Link>
+                        <Link
+                            to="/groups"
+                            style={mobileLinkStyle("/groups")}
+                            onClick={() => setIsOpen(false)}
+                        >
+                            ค้นหากลุ่ม
+                        </Link>
+
+                        <Link
+                            to="/settings"
+                            style={mobileLinkStyle("/settings")}
+                            onClick={() => setIsOpen(false)}
+                        >
+                            ⚙️ ตั้งค่า
+                        </Link>
+
+                        <button
+                            onClick={logout}
+                            style={{
+                                border: "none",
+                                background: "#ef4444",
+                                color: "#fff",
+                                padding: "12px 14px",
+                                borderRadius: "10px",
+                                cursor: "pointer",
+                                fontWeight: "600",
+                                marginTop: "6px",
+                            }}
+                        >
+                            ออกจากระบบ
+                        </button>
                     </div>
-
-                    <NotificationBell
-                        mobile={true}
-                        onItemClick={() => setIsOpen(false)}
-                    />
-
-                    <Link
-                        to="/"
-                        style={mobileLinkStyle("/")}
-                        onClick={() => setIsOpen(false)}
-                    >
-                        หน้าแรก
-                    </Link>
-                    <Link
-                        to="/search"
-                        style={mobileLinkStyle("/search")}
-                        onClick={() => setIsOpen(false)}
-                    >
-                        ค้นหาผู้ใช้
-                    </Link>
-                    <Link
-                        to="/friend-requests"
-                        style={mobileLinkStyle("/friend-requests")}
-                        onClick={() => setIsOpen(false)}
-                    >
-                        คำขอเพื่อน
-                    </Link>
-                    <Link
-                        to="/friends"
-                        style={mobileLinkStyle("/friends")}
-                        onClick={() => setIsOpen(false)}
-                    >
-                        เพื่อน
-                    </Link>
-                    <Link
-                        to="/groups"
-                        style={mobileLinkStyle("/groups")}
-                        onClick={() => setIsOpen(false)}
-                    >
-                        ค้นหากลุ่ม
-                    </Link>
-
-                    <Link
-                        to="/settings"
-                        style={mobileLinkStyle("/settings")}
-                        onClick={() => setIsOpen(false)}
-                    >
-                        ⚙️ ตั้งค่า
-                    </Link>
-
-                    <button
-                        onClick={logout}
-                        style={{
-                            border: "none",
-                            background: "#ef4444",
-                            color: "#fff",
-                            padding: "12px 14px",
-                            borderRadius: "10px",
-                            cursor: "pointer",
-                            fontWeight: "600",
-                            marginTop: "6px",
-                        }}
-                    >
-                        ออกจากระบบ
-                    </button>
-                </div>
-            )}
-        </nav>
+                )
+            }
+        </nav >
     );
 };
 

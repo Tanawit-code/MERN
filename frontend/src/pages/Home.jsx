@@ -495,8 +495,8 @@ const Home = () => {
                 <button
                   onClick={() => handleLike(post._id)}
                   className={`hover:text-blue-600 cursor-pointer ${post.likes?.includes(userData._id)
-                      ? "text-blue-600 font-semibold cursor-pointer"
-                      : ""
+                    ? "text-blue-600 font-semibold cursor-pointer"
+                    : ""
                     }`}
                 >
                   ถูกใจ {post.likes?.length || 0}
@@ -598,44 +598,7 @@ const Home = () => {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-white rounded-2xl shadow p-4">
-            <h2 className="font-bold text-lg mb-4">ข้อมูลผู้ใช้</h2>
 
-            <div className="flex items-center gap-3">
-              {userData?.profilePic ? (
-                <img
-                  src={getImageUrl(userData.profilePic)}
-                  alt={userData?.name}
-                  className="w-12 h-12 rounded-full object-cover border"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
-                  {userData?.name?.charAt(0)?.toUpperCase()}
-                </div>
-              )}
-
-              <div>
-                <p className="font-semibold">{userData?.name}</p>
-                <p className="text-sm text-gray-500">{userData?.email}</p>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-2">
-              <Link
-                to="/profilepage"
-                className="bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-xl text-center"
-              >
-                โปรไฟล์ของฉัน
-              </Link>
-
-              <button
-                onClick={handleLogout}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-center"
-              >
-                ออกจากระบบ
-              </button>
-            </div>
-          </div>
 
           <div className="bg-white rounded-2xl shadow p-4">
             <div className="flex justify-between items-center mb-4">
