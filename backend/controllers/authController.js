@@ -40,6 +40,12 @@ const cookieOptions = {
 
 
 export const sendEmail = async (to, url = "#") => {
+  console.log("SEND EMAIL TO:", to);
+  console.log("VERIFY URL:", url);
+  console.log("SMTP_HOST:", process.env.SMTP_HOST);
+  console.log("SMTP_PORT:", process.env.SMTP_PORT);
+  console.log("SMTP_USER:", process.env.SMTP_USER);
+  console.log("SENDER_EMAIL:", process.env.SENDER_EMAIL);
 
 
   await transporter.verify();
@@ -211,10 +217,11 @@ export const resendVerificationEmail = async (req, res) => {
       message: "ส่งอีเมลยืนยันใหม่แล้ว",
     });
   } catch (error) {
-    console.log("RESEND VERIFICATION ERROR:", error);
+    console.error("RESEND VERIFICATION ERROR FULL:", error);
     return res.status(500).json({
       success: false,
       message: error.message,
+      stack: process.env.NODE_ENV !== "production" ? error.stack : undefined,
     });
   }
 };
