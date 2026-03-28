@@ -107,7 +107,7 @@ const Member = () => {
     };
     const handleLike = async (postId) => {
         try {
-            fetch(`${API_URL}/posts/like/${postId}`, {
+            const res = await fetch(`${API_URL}/posts/like/${postId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
@@ -119,7 +119,7 @@ const Member = () => {
             const data = await res.json();
 
             if (data.success) {
-                fetchPosts(); // โหลดใหม่
+                fetchPosts();
             }
         } catch (err) {
             console.error(err);
