@@ -27,7 +27,7 @@ const ProfilePostCard = ({
                 <div className="flex gap-3 items-center">
                     {post.userId?.profilePic ? (
                         <img
-                            src={`http://localhost:5000/${post.userId?.profilePic}`}
+                            src={getImageUrl(post.userId?.profilePic)}
                             alt={post.userId?.name}
                             className="w-12 h-12 rounded-full object-cover border"
                         />
@@ -122,7 +122,7 @@ const ProfilePostCard = ({
                                 <div className="flex gap-3">
                                     {c.profilePic ? (
                                         <img
-                                            src={`http://localhost:5000/${c.profilePic}`}
+                                            src={getImageUrl(c.profilePic)}
                                             alt={c.name}
                                             className="w-9 h-9 rounded-full object-cover border"
                                         />

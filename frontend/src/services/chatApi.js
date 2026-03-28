@@ -5,9 +5,10 @@
 // สร้าง private conversation
 
 import axios from "axios";
+import { API_URL } from "../config/api";
 
 const API = axios.create({
-    baseURL: "http://localhost:5000/api/chat",
+    baseURL: `${API_URL}/chat`,
     withCredentials: true,
 });
 

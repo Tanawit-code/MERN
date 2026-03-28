@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { API_URL, getImageUrl } from "../config/api";
+
 
 const ConfirmAccountChange = () => {
     const [searchParams] = useSearchParams();
@@ -19,7 +21,7 @@ const ConfirmAccountChange = () => {
                 }
 
                 const { data } = await axios.get(
-                    `http://localhost:5000/api/auth/confirm-change?token=${token}`
+                    `${API_URL}/auth/confirm-change?token=${token}`
                 );
 
                 if (data.success) {

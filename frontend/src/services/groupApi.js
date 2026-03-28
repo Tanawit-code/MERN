@@ -8,8 +8,9 @@
 // getGroupPosts
 
 // ไฟล์นี้ทำให้หน้า frontend ไม่ต้องเขียน fetch(...) ซ้ำเยอะ ๆ
+import { API_URL } from "../config/api";
 
-const API_URL = "http://localhost:5000/api/groups";
+const GROUP_API_URL = `${API_URL}/groups`;
 
 const handleResponse = async (res) => {
     const data = await res.json();

@@ -1,6 +1,9 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { API_BASE } from "../config/api";
+
+
 
 // เป็นที่เก็บ state กลางของแอป เช่น:
 // isLoggedIn
@@ -13,7 +16,7 @@ import { toast } from "react-toastify";
 export const AppContext = createContext();
 
 const AppContextProvider = ({ children }) => {
-    const BackendUrl = "http://localhost:5000";
+    const BackendUrl = API_BASE;
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { getGroupById, updateGroup } from "../services/groupApi";
+import { API_URL, getImageUrl } from "../config/api";
 
 const EditGroupPage = () => {
     const { groupId } = useParams();
@@ -20,7 +21,7 @@ const EditGroupPage = () => {
 
     const fetchCurrentUser = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/auth/member", {
+            const res = await fetch(`${API_URL}/auth/member`, {
                 credentials: "include",
             });
 
@@ -75,9 +76,7 @@ const EditGroupPage = () => {
             setName(groupData.name || "");
             setDescription(groupData.description || "");
             setPreviewImage(
-                groupData.groupImage
-                    ? `http://localhost:5000${groupData.groupImage}`
-                    : ""
+                groupData.groupImage ? getImageUrl(groupData.groupImage) : ""
             );
         } catch (error) {
             console.error("โหลดข้อมูลกลุ่มไม่สำเร็จ", error);
