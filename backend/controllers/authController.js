@@ -451,12 +451,3 @@ export const changePasswordDirect = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-```
-
----
-
-## อย่าลืมทำขั้นตอนนี้ก่อน deploy
-
-ไปที่ Render Dashboard → Environment → เพิ่ม:
-```
-BREVO_API_KEY = xkeysib - xxxxxxxxxxxx
