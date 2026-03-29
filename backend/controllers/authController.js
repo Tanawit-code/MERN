@@ -126,42 +126,18 @@ export const register = async (req, res) => {
       name: name.trim(),
       email: email.toLowerCase(),
       password: hashedPassword,
-
-      // ✅ สมัครแล้ว verified ทันที
       isVerified: true,
-
-      // กันค่าพวก token/otp เก่าค้าง
       verificationToken: "",
       verifyOTP: "",
       verifyOTPExpire: null,
     });
 
-    // ✅ สร้าง token และ login ให้ทันที
     const token = createToken(newUser._id);
 
     res.cookie("token", token, COOKIE_OPTIONS);
 
-    // ✅ ส่งอีเมลแจ้งสมัครสำเร็จ แต่ไม่บังคับต้องกดยืนยัน
-    try {
-      await transporter.sendMail({
-        from: process.env.SENDER_EMAIL,
-        to: newUser.email,
-        subject: "สมัครสมาชิกสำเร็จ",
-        html: `
-                    <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-                        <h2>สวัสดี ${newUser.name}</h2>
-                        <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
-                        <p>อีเมลนี้เป็นเพียงการแจ้งเตือนว่าสมัครสมาชิกสำเร็จ</p>
-                        <hr />
-                        <p style="color:#666;font-size:12px;">ขอบคุณที่ใช้งานระบบของเรา</p>
-                    </div>
-                `,
-      });
-    } catch (mailError) {
-      console.log("REGISTER MAIL ERROR:", mailError.message);
-    }
-
-    return res.status(201).json({
+    // ตอบกลับให้ frontend ทันที ไม่ต้องรอส่งเมล
+    res.status(201).json({
       success: true,
       message: "สมัครสมาชิกสำเร็จ และเข้าสู่ระบบแล้ว",
       user: {
@@ -172,6 +148,29 @@ export const register = async (req, res) => {
         isVerified: newUser.isVerified,
       },
     });
+
+    // ส่งอีเมลแบบ background
+    transporter
+      .sendMail({
+        from: process.env.SENDER_EMAIL,
+        to: newUser.email,
+        subject: "สมัครสมาชิกสำเร็จ",
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <h2>สวัสดี ${newUser.name}</h2>
+            <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
+            <p>อีเมลนี้เป็นเพียงการแจ้งเตือนว่าสมัครสมาชิกสำเร็จ</p>
+            <hr />
+            <p style="color:#666;font-size:12px;">ขอบคุณที่ใช้งานระบบของเรา</p>
+          </div>
+        `,
+      })
+      .then((info) => {
+        console.log("REGISTER MAIL SENT:", info.response);
+      })
+      .catch((mailError) => {
+        console.log("REGISTER MAIL ERROR:", mailError.message);
+      });
   } catch (error) {
     console.log("REGISTER ERROR:", error);
     return res.status(500).json({
@@ -308,7 +307,7 @@ export const login = async (req, res) => {
     }
 
     const token = createToken(user._id);
-    res.cookie("token", token, cookieOptions);
+    res.cookie("token", token, COOKIE_OPTIONS);
 
     return res.status(200).json({
       success: true,
