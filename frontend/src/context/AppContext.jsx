@@ -3,17 +3,17 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { API_BASE } from "../config/api";
 
-
-
-// เป็นที่เก็บ state กลางของแอป เช่น:
-// isLoggedIn
-// userData
-// isLoading
-// ฟังก์ชัน logout
-
-// ทำให้หลายหน้าเข้าถึงข้อมูลผู้ใช้ที่ล็อกอินอยู่ได้โดยไม่ต้องส่ง props ต่อกันยาว ๆ
-
 export const AppContext = createContext();
+
+// ✅ เพิ่ม interceptor ตรงนี้ — แนบ token ทุก request อัตโนมัติ
+axios.defaults.withCredentials = true;
+axios.interceptors.request.use((config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
 
 const AppContextProvider = ({ children }) => {
     const BackendUrl = API_BASE;
@@ -21,12 +21,9 @@ const AppContextProvider = ({ children }) => {
     const [userData, setUserData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    axios.defaults.withCredentials = true;
-
     const getUserData = async () => {
         try {
             const { data } = await axios.get(`${BackendUrl}/api/auth/member`);
-
             if (data.success) {
                 setIsLoggedIn(true);
                 setUserData(data.user);
@@ -45,8 +42,8 @@ const AppContextProvider = ({ children }) => {
     const logout = async () => {
         try {
             const { data } = await axios.post(`${BackendUrl}/api/auth/logout`);
-
             if (data.success) {
+                localStorage.removeItem("token"); // ✅ เพิ่มบรรทัดนี้
                 setIsLoggedIn(false);
                 setUserData(null);
                 toast.success("ออกจากระบบสำเร็จ");
@@ -63,14 +60,9 @@ const AppContextProvider = ({ children }) => {
     }, []);
 
     const value = {
-        BackendUrl,
-        isLoggedIn,
-        setIsLoggedIn,
-        userData,
-        setUserData,
-        getUserData,
-        logout,
-        isLoading,
+        BackendUrl, isLoggedIn, setIsLoggedIn,
+        userData, setUserData, getUserData,
+        logout, isLoading,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

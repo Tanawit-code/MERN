@@ -136,13 +136,10 @@ export const register = async (req, res) => {
     });
 
     const token = createToken(newUser._id);
-
     res.cookie("token", token, COOKIE_OPTIONS);
-
-    // ตอบกลับให้ frontend ทันที ไม่ต้องรอส่งเมล
     res.status(201).json({
       success: true,
-      message: "สมัครสมาชิกสำเร็จ และเข้าสู่ระบบแล้ว",
+      token,
       user: {
         _id: newUser._id,
         name: newUser.name,
@@ -310,11 +307,10 @@ export const login = async (req, res) => {
     }
 
     const token = createToken(user._id);
-    res.cookie("token", token, COOKIE_OPTIONS);
-
+    res.cookie("token", token, COOKIE_OPTIONS); // เก็บไว้สำหรับ browser ที่รองรับ
     return res.status(200).json({
       success: true,
-      message: "Login success",
+      token,
       user: {
         _id: user._id,
         name: user.name,

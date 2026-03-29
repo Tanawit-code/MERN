@@ -106,6 +106,7 @@ const LoginPage = () => {
         );
 
         if (data.success) {
+          if (data.token) localStorage.setItem("token", data.token);
           setIsLoggedIn(true);
           await getUserData?.();
 
@@ -130,6 +131,7 @@ const LoginPage = () => {
       );
 
       if (data.success) {
+        if (data.token) localStorage.setItem("token", data.token);
         setIsLoggedIn(true);
         await getUserData?.();
         toast.success(data.message || "สมัครสมาชิกสำเร็จ");
