@@ -77,12 +77,18 @@ export const searchUsers = async (req, res) => {
             });
         }
 
+        const escapeRegex = (text) => {
+            return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        };
+
+        const safeKeyword = escapeRegex(keyword);
+
         const users = await userModel
             .find({
                 _id: { $ne: userId },
                 $or: [
-                    { name: { $regex: keyword, $options: "i" } },
-                    { email: { $regex: keyword, $options: "i" } },
+                    { name: { $regex: safeKeyword, $options: "i" } },
+                    { email: { $regex: safeKeyword, $options: "i" } },
                 ],
             })
             .select("_id name email profilePic")

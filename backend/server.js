@@ -30,7 +30,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
@@ -52,6 +52,23 @@ app.use("/api/notifications", notificationRoutes);
 
 app.get("/", (req, res) => {
   res.send("API Running welcome to backend");
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err.message);
+
+  if (err.message === "Not allowed by CORS") {
+    return res.status(403).json({
+      success: false,
+      message: "CORS blocked",
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+  });
 });
 
 const PORT = process.env.PORT || 5000;

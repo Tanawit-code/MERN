@@ -84,33 +84,62 @@ export const register = async (req, res) => {
   try {
     const { name, email, password, confirmPassword } = req.body;
 
-    if (!name || !name.trim())
-      return res.status(400).json({ success: false, message: "กรุณากรอกชื่อ" });
-    if (!email || !password || !confirmPassword)
-      return res.status(400).json({ success: false, message: "กรุณากรอกข้อมูลให้ครบ" });
-    if (password !== confirmPassword)
-      return res.status(400).json({ success: false, message: "รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน" });
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกชื่อ",
+      });
+    }
 
-    const existingUser = await userModel.findOne({ email: email.toLowerCase() });
-    if (existingUser)
-      return res.status(400).json({ success: false, message: "อีเมลนี้ถูกใช้งานแล้ว" });
+    if (!email || !password || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกข้อมูลให้ครบ",
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existingUser = await userModel.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "อีเมลนี้ถูกใช้งานแล้ว",
+      });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
     const newUser = await userModel.create({
       name: name.trim(),
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: hashedPassword,
-      isVerified: true,
-      verificationToken: "",
+      isVerified: false,
+      verificationToken,
+      verificationTokenExpire: Date.now() + 60 * 60 * 1000, // 1 ชั่วโมง
       verifyOTP: "",
       verifyOTPExpire: null,
     });
 
-    const token = createToken(newUser._id);
-    res.cookie("token", token, COOKIE_OPTIONS);
-    res.status(201).json({
+    const verifyUrl = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${verificationToken}`;
+
+    try {
+      await sendEmail(newUser.email, verifyUrl);
+    } catch (emailError) {
+      console.log("REGISTER MAIL ERROR:", emailError.message);
+    }
+
+    return res.status(201).json({
       success: true,
-      token,
+      message: "สมัครสมาชิกสำเร็จ กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชีก่อนเข้าสู่ระบบ",
       user: {
         _id: newUser._id,
         name: newUser.name,
@@ -118,25 +147,14 @@ export const register = async (req, res) => {
         profilePic: newUser.profilePic || "",
         isVerified: newUser.isVerified,
       },
+      requireVerification: true,
     });
-
-    // ส่งอีเมลแบบ background
-    sendBrevoEmail(
-      newUser.email,
-      "สมัครสมาชิกสำเร็จ",
-      `<div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>สวัสดี ${newUser.name}</h2>
-        <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
-        <hr />
-        <p style="color:#666;font-size:12px;">ขอบคุณที่ใช้งานระบบของเรา</p>
-      </div>`
-    )
-      .then(() => console.log("REGISTER MAIL SENT"))
-      .catch((e) => console.log("REGISTER MAIL ERROR:", e.message));
-
   } catch (error) {
     console.log("REGISTER ERROR:", error);
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: "เกิดข้อผิดพลาดในระบบ",
+    });
   }
 };
 
@@ -486,4 +504,12 @@ export const changePasswordDirect = async (req, res) => {
       message: error.message,
     });
   }
+};
+
+export const logError = (msg, err) => {
+  console.error(`[ERROR] ${msg}`, err.message);
+};
+
+export const logInfo = (msg) => {
+  console.log(`[INFO] ${msg}`);
 };

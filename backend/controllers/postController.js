@@ -208,25 +208,42 @@ export const deleteComment = async (req, res) => {
             });
         }
 
+        const comment = post.comments.find(
+            (c) => c._id.toString() === commentId
+        );
+
+        if (!comment) {
+            return res.status(404).json({
+                success: false,
+                message: "ไม่พบคอมเมนต์",
+            });
+        }
+
+        // 🔥 เช็คสิทธิ์
+        if (
+            comment.userId.toString() !== req.userId &&
+            post.userId.toString() !== req.userId
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: "ไม่มีสิทธิ์ลบคอมเมนต์นี้",
+            });
+        }
+
         post.comments = post.comments.filter(
             (c) => c._id.toString() !== commentId
         );
 
         await post.save();
 
-        const updatedPost = await Post.findById(postId).populate(
-            "userId",
-            "name profilePic"
-        );
-
         return res.json({
             success: true,
-            post: updatedPost,
+            post,
         });
     } catch (err) {
         return res.status(500).json({
             success: false,
-            message: err.message,
+            message: "เกิดข้อผิดพลาด",
         });
     }
 };
