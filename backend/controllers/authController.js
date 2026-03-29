@@ -332,7 +332,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    res.clearCookie("token", cookieOptions);
+    res.clearCookie("token", COOKIE_OPTIONS);
 
     return res.status(200).json({
       success: true,
