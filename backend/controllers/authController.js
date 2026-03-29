@@ -67,24 +67,17 @@ export const sendEmail = async (to, url = "#") => {
 };
 
 export const sendRegisterSuccessEmail = async (to, name = "ผู้ใช้") => {
-  // await transporter.verify();
-  console.log("SMTP READY");
-
-  const info = await transporter.sendMail({
-    from: process.env.SENDER_EMAIL,
+  await sendBrevoEmail(
     to,
-    subject: "สมัครสมาชิกสำเร็จ",
-    html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.7;">
-        <h2>สมัครสมาชิกสำเร็จ 🎉</h2>
-        <p>สวัสดี ${name}</p>
-        <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
-        <p>อีเมลนี้เป็นเพียงการแจ้งเตือนว่าการสมัครสมาชิกสำเร็จ</p>
-      </div>
-    `,
-  });
-
-  console.log("REGISTER MAIL SENT:", info.response);
+    "สมัครสมาชิกสำเร็จ",
+    `<div style="font-family: Arial, sans-serif; line-height: 1.7;">
+      <h2>สมัครสมาชิกสำเร็จ 🎉</h2>
+      <p>สวัสดี ${name}</p>
+      <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
+      <p>อีเมลนี้เป็นเพียงการแจ้งเตือนว่าการสมัครสมาชิกสำเร็จ</p>
+    </div>`
+  );
+  console.log("REGISTER SUCCESS MAIL SENT");
 };
 
 export const register = async (req, res) => {
@@ -103,30 +96,43 @@ export const register = async (req, res) => {
       return res.status(400).json({ success: false, message: "อีเมลนี้ถูกใช้งานแล้ว" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // ✅ สร้าง verification token
-    const verifyToken = crypto.randomBytes(32).toString("hex");
-    const verifyTokenExpire = Date.now() + 24 * 60 * 60 * 1000; // หมดอายุ 24 ชั่วโมง
-
     const newUser = await userModel.create({
       name: name.trim(),
       email: email.toLowerCase(),
       password: hashedPassword,
-      isVerified: false,                        // ✅ ยังไม่ verified
-      verificationToken: verifyToken,           // ✅ เก็บ token
-      verificationTokenExpire: verifyTokenExpire,
+      isVerified: true,
+      verificationToken: "",
+      verifyOTP: "",
+      verifyOTPExpire: null,
     });
 
-    // ✅ ส่งอีเมลยืนยัน (รอ await เพราะสำคัญ)
-    const verifyUrl = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${verifyToken}`;
-    await sendEmail(newUser.email, verifyUrl);
-
-    // ✅ ไม่ส่ง token กลับ เพราะยังเข้าไม่ได้
-    return res.status(201).json({
+    const token = createToken(newUser._id);
+    res.cookie("token", token, COOKIE_OPTIONS);
+    res.status(201).json({
       success: true,
-      requireVerification: true,
-      message: "สมัครสมาชิกสำเร็จ กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ",
+      token,
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        profilePic: newUser.profilePic || "",
+        isVerified: newUser.isVerified,
+      },
     });
+
+    // ส่งอีเมลแบบ background
+    sendBrevoEmail(
+      newUser.email,
+      "สมัครสมาชิกสำเร็จ",
+      `<div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h2>สวัสดี ${newUser.name}</h2>
+        <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
+        <hr />
+        <p style="color:#666;font-size:12px;">ขอบคุณที่ใช้งานระบบของเรา</p>
+      </div>`
+    )
+      .then(() => console.log("REGISTER MAIL SENT"))
+      .catch((e) => console.log("REGISTER MAIL ERROR:", e.message));
 
   } catch (error) {
     console.log("REGISTER ERROR:", error);
@@ -379,8 +385,11 @@ export const confirmAccountChange = async (req, res) => {
       changeVerifyToken: token,
       changeVerifyExpire: { $gt: Date.now() },
     });
-    if (!user)
-      return res.json({ success: false, message: "ลิงก์หมดอายุ" });
+
+    // ✅ redirect ไปหน้า frontend แทนคืน JSON
+    if (!user) {
+      return res.redirect(`${process.env.FRONTEND_URL}/verify-result?status=error&message=ลิงก์หมดอายุหรือไม่ถูกต้อง`);
+    }
 
     if (user.pendingEmail) { user.email = user.pendingEmail; user.pendingEmail = ""; user.isVerified = true; }
     if (user.pendingPassword) { user.password = user.pendingPassword; user.pendingPassword = ""; }
@@ -388,9 +397,9 @@ export const confirmAccountChange = async (req, res) => {
     user.changeVerifyExpire = 0;
     await user.save();
 
-    return res.json({ success: true, message: "ยืนยันสำเร็จ" });
+    return res.redirect(`${process.env.FRONTEND_URL}/verify-result?status=success&message=ยืนยันสำเร็จ`);
   } catch (err) {
-    return res.status(500).json({ success: false, message: err.message });
+    return res.redirect(`${process.env.FRONTEND_URL}/verify-result?status=error&message=เกิดข้อผิดพลาด`);
   }
 };
 
@@ -410,31 +419,71 @@ export const sendPasswordChangedEmail = async (to, name = "ผู้ใช้") 
 
 export const changePasswordDirect = async (req, res) => {
   try {
+    const userId = req.userId;
     const { newPassword, confirmPassword } = req.body;
-    if (!newPassword || !confirmPassword)
-      return res.status(400).json({ success: false, message: "กรุณากรอกรหัสผ่านใหม่และยืนยันรหัสผ่าน" });
-    if (newPassword.length < 8)
-      return res.status(400).json({ success: false, message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร" });
-    if (!/[A-Z]/.test(newPassword))
-      return res.status(400).json({ success: false, message: "รหัสผ่านใหม่ต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว" });
-    if (newPassword !== confirmPassword)
-      return res.status(400).json({ success: false, message: "ยืนยันรหัสผ่านไม่ตรงกัน" });
 
-    const user = await userModel.findById(req.userId);
-    if (!user)
-      return res.status(404).json({ success: false, message: "ไม่พบผู้ใช้" });
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "กรุณากรอกรหัสผ่านใหม่และยืนยันรหัสผ่าน",
+      });
+    }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร",
+      });
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        message: "รหัสผ่านใหม่ต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "ยืนยันรหัสผ่านไม่ตรงกัน",
+      });
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "ไม่พบผู้ใช้",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+
+    // ล้างค่า pending เดิมเผื่อมีค้าง
     user.pendingPassword = "";
     user.changeVerifyToken = "";
     user.changeVerifyExpire = 0;
+
     await user.save();
 
-    try { await sendPasswordChangedEmail(user.email, user.name); }
-    catch (e) { console.error("PASSWORD CHANGED MAIL ERROR:", e.message); }
+    try {
+      await sendPasswordChangedEmail(user.email, user.name);
+    } catch (emailError) {
+      console.error("PASSWORD CHANGED MAIL ERROR:", emailError);
+      // ไม่ให้การเปลี่ยนรหัสล้มเพราะส่งเมลไม่สำเร็จ
+    }
 
-    return res.status(200).json({ success: true, message: "เปลี่ยนรหัสผ่านสำเร็จ และส่งอีเมลแจ้งเตือนแล้ว" });
+    return res.status(200).json({
+      success: true,
+      message: "เปลี่ยนรหัสผ่านสำเร็จ และส่งอีเมลแจ้งเตือนแล้ว",
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.log("CHANGE PASSWORD DIRECT ERROR:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };

@@ -25,6 +25,8 @@ import EditGroupPage from "./pages/EditGroupPage";
 
 import SettingsPage from "./pages/SettingsPage";
 
+import VerifyResultPage from "./pages/VerifyResultPage";
+
 const App = () => {
   return (
     <>
@@ -59,6 +61,7 @@ const App = () => {
 
         <Route path="/groups/edit/:groupId" element={<EditGroupPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/verify-result" element={<VerifyResultPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
