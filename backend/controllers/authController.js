@@ -34,13 +34,16 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 10000,   // ✅ เพิ่มตรงนี้
+  greetingTimeout: 10000,     // ✅ เพิ่มตรงนี้
+  socketTimeout: 15000,       // ✅ เพิ่มตรงนี้
 });
 
 export const sendEmail = async (to, url = "#") => {
   console.log("SEND EMAIL TO:", to);
   console.log("VERIFY URL:", url);
 
-  await transporter.verify();
+  // await transporter.verify();
   console.log("SMTP READY");
 
   const info = await transporter.sendMail({
@@ -64,7 +67,7 @@ export const sendEmail = async (to, url = "#") => {
 };
 
 export const sendRegisterSuccessEmail = async (to, name = "ผู้ใช้") => {
-  await transporter.verify();
+  // await transporter.verify();
   console.log("SMTP READY");
 
   const info = await transporter.sendMail({
@@ -507,7 +510,7 @@ export const resetPassword = async (req, res) => {
 };
 
 export const sendResetPasswordEmail = async (to, url = "#") => {
-  await transporter.verify();
+  // await transporter.verify();
   console.log("SMTP READY");
 
   const info = await transporter.sendMail({
@@ -642,7 +645,7 @@ export const confirmAccountChange = async (req, res) => {
   }
 };
 export const sendPasswordChangedEmail = async (to, name = "ผู้ใช้") => {
-  await transporter.verify();
+  // await transporter.verify();
   console.log("SMTP READY");
 
   const info = await transporter.sendMail({
