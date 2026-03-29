@@ -106,12 +106,19 @@ const LoginPage = () => {
         );
 
         if (data.success) {
+          // ✅ ไม่ setIsLoggedIn แล้ว เพราะต้องยืนยันอีเมลก่อน
+          if (data.requireVerification) {
+            toast.success("สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี");
+            resetForm();
+            setMode("login"); // กลับไปหน้า login
+            return;
+          }
+
+          // กรณีไม่ต้องยืนยัน (fallback)
           if (data.token) localStorage.setItem("token", data.token);
           setIsLoggedIn(true);
           await getUserData?.();
-
-          toast.success("สมัครสมาชิกสำเร็จ และจำลองส่งอีเมลแล้ว");
-
+          toast.success("สมัครสมาชิกสำเร็จ");
           resetForm();
           navigate("/");
           return;

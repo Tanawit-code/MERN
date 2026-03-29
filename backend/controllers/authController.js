@@ -103,43 +103,30 @@ export const register = async (req, res) => {
       return res.status(400).json({ success: false, message: "อีเมลนี้ถูกใช้งานแล้ว" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // ✅ สร้าง verification token
+    const verifyToken = crypto.randomBytes(32).toString("hex");
+    const verifyTokenExpire = Date.now() + 24 * 60 * 60 * 1000; // หมดอายุ 24 ชั่วโมง
+
     const newUser = await userModel.create({
       name: name.trim(),
       email: email.toLowerCase(),
       password: hashedPassword,
-      isVerified: true,
-      verificationToken: "",
-      verifyOTP: "",
-      verifyOTPExpire: null,
+      isVerified: false,                        // ✅ ยังไม่ verified
+      verificationToken: verifyToken,           // ✅ เก็บ token
+      verificationTokenExpire: verifyTokenExpire,
     });
 
-    const token = createToken(newUser._id);
-    res.cookie("token", token, COOKIE_OPTIONS);
-    res.status(201).json({
+    // ✅ ส่งอีเมลยืนยัน (รอ await เพราะสำคัญ)
+    const verifyUrl = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${verifyToken}`;
+    await sendEmail(newUser.email, verifyUrl);
+
+    // ✅ ไม่ส่ง token กลับ เพราะยังเข้าไม่ได้
+    return res.status(201).json({
       success: true,
-      token,
-      user: {
-        _id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        profilePic: newUser.profilePic || "",
-        isVerified: newUser.isVerified,
-      },
+      requireVerification: true,
+      message: "สมัครสมาชิกสำเร็จ กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ",
     });
-
-    // ส่งอีเมลแบบ background
-    sendBrevoEmail(
-      newUser.email,
-      "สมัครสมาชิกสำเร็จ",
-      `<div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h2>สวัสดี ${newUser.name}</h2>
-        <p>บัญชีของคุณถูกสร้างเรียบร้อยแล้ว และสามารถเข้าใช้งานได้ทันที</p>
-        <hr />
-        <p style="color:#666;font-size:12px;">ขอบคุณที่ใช้งานระบบของเรา</p>
-      </div>`
-    )
-      .then(() => console.log("REGISTER MAIL SENT"))
-      .catch((e) => console.log("REGISTER MAIL ERROR:", e.message));
 
   } catch (error) {
     console.log("REGISTER ERROR:", error);
